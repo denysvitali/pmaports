@@ -40,6 +40,7 @@ source="
 	$pkgname-$_commit.tar.gz::https://github.com/jhovold/$_repository/archive/$_commit.tar.gz
 	misc.config
 	pmos.config
+	device.config
 "
 builddir="$srcdir/linux-$_commit"
 _outdir="out"
@@ -49,6 +50,7 @@ prepare() {
 	default_prepare
 	cp "$srcdir/pmos.config" "$builddir"/arch/"$_carch"/configs/
 	cp "$srcdir/misc.config" "$builddir"/arch/"$_carch"/configs/
+	cp "$srcdir/device.config" "$builddir"/arch/"$_carch"/configs/
 
 	# Generate .config
 	unset LDFLAGS
@@ -84,4 +86,5 @@ sha512sums="
 d3716fd7b9dbdd913abb78d6e23dd1d4d21c7ca04749f2d1b1b808c454ea1ea4f6d63dc6ba54ac8341e05a4e671443e556cf0334eec566f248b452e9bab396f5  linux-postmarketos-qcom-laptop-c328bbee28fed9e3b89db02ef48f52159d237fb0.tar.gz
 980eefd8aaee78897cd41d039eecc11e23b8d7cc87b41c869f1e2b83cd9b5dac9813d7bd1a0e7c466303c795f234871080686921b9672983604551903004cb68  misc.config
 89244418a7331fd89109591f2748bebdcc7c9a4a34980a551d0a42abf063cb47188758d5e22001caf10f8db893532544a3dbd1111764ddea9db6048bbde005f4  pmos.config
+6976d5602de08e4556b898e5098f9ad7395834d125dfd29e06436a8048d589912772ca7c72b11eea59b2fe3eb237673d09fe774c0c7a189a9bea07daa3cefd9a  device.config
 "
