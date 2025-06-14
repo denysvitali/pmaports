@@ -49,7 +49,7 @@ prepare() {
 	# Extract kernel common source
 	tar -xf "$pkgname-$_commit.tar.gz" -C "$builddir" --strip-components=0
 	
-	# Extract pantah device configs
+	# Extract pantah device configs and DTS files
 	mkdir -p "$builddir/private/devices/google/pantah"
 	tar -xf "$pkgname-pantah-$_pantah_commit.tar.gz" -C "$builddir/private/devices/google/pantah" --strip-components=0
 	
@@ -58,12 +58,34 @@ prepare() {
 	tar -xf "$pkgname-gs201-$_gs201_commit.tar.gz" -C "$builddir/private/devices/google/gs201" --strip-components=0
 	
 	cd "$builddir"
+	
+	# Copy device tree sources to the correct location in kernel tree
+	mkdir -p arch/arm64/boot/dts/google
+	cp -r private/devices/google/pantah/dts/* arch/arm64/boot/dts/google/
+	
+	# Copy the official pantah_defconfig as base configuration
+	cp private/devices/google/pantah/pantah_defconfig arch/arm64/configs/
+	
+	# Apply our additional postmarketOS-specific config on top
+	cp "$srcdir/$_config" arch/arm64/configs/google-panther-downstream_defconfig
+	
 	default_prepare
 	REPLACE_GCCH=0 . downstreamkernel_prepare
 }
 
 build() {
 	unset LDFLAGS
+	
+	# Start with the official pantah_defconfig
+	make O="$_outdir" ARCH="$_carch" CC="${CC:-gcc}" pantah_defconfig
+	
+	# Apply our postmarketOS-specific config additions on top
+	cat "$srcdir/$_config" >> "$_outdir/.config"
+	
+	# Regenerate config to resolve any conflicts/dependencies
+	make O="$_outdir" ARCH="$_carch" CC="${CC:-gcc}" olddefconfig
+	
+	# Build kernel and device trees
 	make O="$_outdir" ARCH="$_carch" CC="${CC:-gcc}" \
 		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS" \
 		V=1
@@ -74,11 +96,11 @@ package() {
 		"$builddir" "$pkgdir" "$_carch" "$_flavor" "$_outdir"
 
 	# Install kernel image (try Image.dtb first, fallback to Image)
-	if [ -f "$_outdir/arch/arm64/boot/Image.dtb" ]; then
-		install -Dm644 "$_outdir/arch/arm64/boot/Image.dtb" \
+	if [ -f "$builddir/$_outdir/arch/arm64/boot/Image.dtb" ]; then
+		install -Dm644 "$builddir/$_outdir/arch/arm64/boot/Image.dtb" \
 			"$pkgdir/boot/vmlinuz"
-	elif [ -f "$_outdir/arch/arm64/boot/Image" ]; then
-		install -Dm644 "$_outdir/arch/arm64/boot/Image" \
+	elif [ -f "$builddir/$_outdir/arch/arm64/boot/Image" ]; then
+		install -Dm644 "$builddir/$_outdir/arch/arm64/boot/Image" \
 			"$pkgdir/boot/vmlinuz"
 	else
 		msg "ERROR: No kernel image found!"
@@ -99,19 +121,21 @@ package() {
 
 	# Create google subdirectory and symlink for deviceinfo compatibility
 	mkdir -p "$pkgdir/boot/dtbs/google"
-	if [ -f "$pkgdir/boot/dtbs/gs201-panther.dtb" ]; then
-		ln -sf "../gs201-panther.dtb" "$pkgdir/boot/dtbs/google/gs201-panther.dtb"
-	elif [ -f "$pkgdir/boot/dtbs/google-gs201-panther.dtb" ]; then
-		ln -sf "../google-gs201-panther.dtb" "$pkgdir/boot/dtbs/google/gs201-panther.dtb"
+	# Look for the actual Panther DTB files (prioritize production version)
+	if [ -f "$pkgdir/boot/dtbs/google/gs201-panther-mp.dtb" ]; then
+		ln -sf "../google/gs201-panther-mp.dtb" "$pkgdir/boot/dtbs/google/gs201-panther.dtb"
+		echo "Using production DTB: gs201-panther-mp.dtb"
+	elif [ -f "$pkgdir/boot/dtbs/google/gs201-panther-dvt1.dtb" ]; then
+		ln -sf "../google/gs201-panther-dvt1.dtb" "$pkgdir/boot/dtbs/google/gs201-panther.dtb"
+		echo "Using DVT1 DTB: gs201-panther-dvt1.dtb"
+	elif [ -f "$pkgdir/boot/dtbs/google/gs201-panther-evt1.dtb" ]; then
+		ln -sf "../google/gs201-panther-evt1.dtb" "$pkgdir/boot/dtbs/google/gs201-panther.dtb"
+		echo "Using EVT1 DTB: gs201-panther-evt1.dtb"
 	else
-		# Fallback: create symlink to any available DTB for testing
-		# This allows the package to install even without the specific DTB
-		available_dtb=$(find "$pkgdir/boot/dtbs" -name "*.dtb" | head -1)
-		if [ -n "$available_dtb" ]; then
-			relative_dtb=$(echo "$available_dtb" | sed "s|$pkgdir/boot/dtbs/||")
-			ln -sf "../$relative_dtb" "$pkgdir/boot/dtbs/google/gs201-panther.dtb"
-			echo "WARNING: Using fallback DTB $relative_dtb for gs201-panther.dtb"
-		fi
+		echo "ERROR: No Panther DTB files found!"
+		echo "Available DTB files:"
+		find "$pkgdir/boot/dtbs" -name "*.dtb" | head -10
+		exit 2
 	fi
 }
 
