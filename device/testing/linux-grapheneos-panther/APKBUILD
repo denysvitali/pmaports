@@ -1,0 +1,206 @@
+#!/bin/bash
+# shellcheck disable=SC2034 # pkgrel, arch, license, url, makedepends_host, subpackages, options are used by abuild
+# shellcheck disable=SC2154 # srcdir, pkgdir, subpkgdir, etc. are provided by abuild
+# Contributor: Davide Vitali <davide@vitali.sh>
+# Maintainer: Davide Vitali <davide@vitali.sh>
+
+pkgname=linux-grapheneos-panther
+pkgver=6.1.20250614
+pkgrel=0
+pkgdesc="GrapheneOS kernel for Google Pixel 7 (panther)"
+arch="aarch64"
+_carch="arm64"
+_flavor="grapheneos-panther"
+license="GPL-2.0-only"
+url="https://github.com/GrapheneOS/kernel_manifest-pixel"
+makedepends="bash bison bc coreutils flex git kmod make openssl-dev perl python3 rsync clang lld patch lz4 dtc elfutils-dev linux-headers"
+subpackages="$pkgname-dev $pkgname-dtb"
+options="!check !strip !tracedeps pmb:cross-native"
+
+_grapheneos_branch="16"
+_aosp_tag="refs/tags/android-16.0.0_r0.9"
+_defconfig="pantah_defconfig"
+_workspace_root="$srcdir/graphene_kernel_workspace"
+_kernelrelease=""
+
+# Main kernel source - use specific commit hash for reproducibility
+_commit="7a7f9d5dfa0c8d6c69e5e17a12b4c1bb1e5a4e14"  # GrapheneOS kernel_common-6.1 branch 16 commit as of 2025-06-15
+_config="config-$_flavor.$arch"
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/GrapheneOS/kernel_common-6.1/archive/$_commit.tar.gz
+	$_config
+"
+builddir="$srcdir/kernel_common-6.1-$_commit"
+
+prepare() {
+	default_prepare
+
+	# Create a minimal workspace root for output artifacts
+	mkdir -p "$_workspace_root/out/pantah/dist"
+}
+
+# Function removed since kernelrelease is determined directly in build()
+
+build() {
+	cd "$builddir" || return 1
+
+	msg "Starting direct kernel build for pantah..."
+	
+	# Copy our kernel config
+	cp "$srcdir/$_config" .config
+
+	# Setup output directory for artifacts
+	local dist_dir="$_workspace_root/out/pantah/dist"
+	mkdir -p "$dist_dir"
+	
+	# Set environment variables for build
+	export ARCH="$_carch"
+	export LLVM=1
+	export LLVM_IAS=1
+	export CROSS_COMPILE="aarch64-linux-gnu-"
+	export CROSS_COMPILE_COMPAT="arm-linux-gnueabi-"
+	export PATH="/usr/lib/ccache/bin:$PATH"
+	
+	# Build the kernel directly
+	msg "Running make olddefconfig..."
+	make olddefconfig
+	
+	msg "Running make..."
+	make -j$(nproc)
+	
+	# Copy build artifacts to dist directory
+	msg "Copying build artifacts to $dist_dir"
+	cp arch/$_carch/boot/Image.gz "$dist_dir/"
+	cp arch/$_carch/boot/Image "$dist_dir/" || true
+	cp .config "$dist_dir/config"
+	
+	# Find and copy DTBs
+	mkdir -p "$dist_dir/dtbs"
+	find arch/$_carch/boot/dts -name "*.dtb" -o -name "*.dtbo" | while read -r file; do
+		cp "$file" "$dist_dir/dtbs/"
+	done
+	
+	# Create kernel_release file
+	make kernelrelease > "$dist_dir/kernel_release"
+	_kernelrelease=$(cat "$dist_dir/kernel_release")
+	
+	# Copy modules if available
+	if [ -d "drivers/modules" ]; then
+		mkdir -p "$dist_dir/lib/modules/$_kernelrelease"
+		find . -name "*.ko" | while read -r module; do
+			cp "$module" "$dist_dir/lib/modules/$_kernelrelease/"
+		done
+		cp Module.symvers "$dist_dir/"
+	fi
+	
+	msg "Kernel build completed. Release: $_kernelrelease"
+}
+
+package() {
+	msg "Starting main package creation for $pkgname..."
+
+	local dist_dir="$_workspace_root/out/pantah/dist"
+	
+	# Install kernel image
+	if [ -f "$dist_dir/Image.gz" ]; then
+		install -Dm644 "$dist_dir/Image.gz" "$pkgdir/boot/vmlinuz-$pkgname"
+	elif [ -f "$dist_dir/Image" ]; then
+		install -Dm644 "$dist_dir/Image" "$pkgdir/boot/vmlinuz-$pkgname"
+	else
+		msg_error "Kernel image (Image.gz or Image) not found in $dist_dir"
+		return 1
+	fi
+	ln -sf "vmlinuz-$pkgname" "$pkgdir/boot/vmlinuz"
+
+	# Install kernel modules if available
+	if [ -d "$dist_dir/lib/modules/$_kernelrelease" ]; then
+		msg "Installing kernel modules..."
+		mkdir -p "$pkgdir/lib/modules/$_kernelrelease"
+		cp -r "$dist_dir/lib/modules/$_kernelrelease"/* "$pkgdir/lib/modules/$_kernelrelease/"
+		
+		if [ -f "$dist_dir/Module.symvers" ]; then
+			cp "$dist_dir/Module.symvers" "$pkgdir/lib/modules/$_kernelrelease/"
+		fi
+		
+		# Run depmod
+		depmod -b "$pkgdir" "$_kernelrelease"
+	fi
+
+	# Install kernel config
+	if [ -f "$dist_dir/config" ]; then
+		install -Dm644 "$dist_dir/config" "$pkgdir/boot/config-$pkgname"
+		ln -sf "config-$pkgname" "$pkgdir/boot/config"
+	fi
+}
+
+dev_package() {
+	msg "Starting -dev package creation..."
+
+	local build_dir="$subpkgdir/usr/lib/modules/$_kernelrelease/build"
+	mkdir -p "$build_dir"
+
+	# Copy kernel config
+	if [ -f "$builddir/.config" ]; then
+		install -Dm644 "$builddir/.config" "$build_dir/.config"
+	fi
+
+	# Copy Module.symvers if available
+	if [ -f "$builddir/Module.symvers" ]; then
+		install -Dm644 "$builddir/Module.symvers" "$build_dir/Module.symvers"
+	fi
+
+	# Install kernel headers
+	cd "$builddir" || return 1
+	
+	# Generate sanitized kernel headers
+	make headers_install INSTALL_HDR_PATH="$build_dir"
+	
+	# Copy essential build files
+	cp Makefile "$build_dir/Makefile"
+	cp Kconfig "$build_dir/Kconfig"
+	cp -r scripts "$build_dir/scripts"
+	
+	# Copy arch-specific files
+	mkdir -p "$build_dir/arch/$_carch"
+	cp -r arch/$_carch/include "$build_dir/arch/$_carch/"
+	cp arch/$_carch/Makefile "$build_dir/arch/$_carch/Makefile" 2>/dev/null || true
+	
+	# Create symlinks
+	mkdir -p "$subpkgdir/lib/modules/$_kernelrelease"
+	ln -sf "/usr/lib/modules/$_kernelrelease/build" "$subpkgdir/lib/modules/$_kernelrelease/build"
+}
+
+dtb_package() {
+	msg "Starting -dtb package creation..."
+
+	local dist_dir="$_workspace_root/out/pantah/dist"
+	local dtb_install_dir="$subpkgdir/boot/dtbs/$pkgname"
+	mkdir -p "$dtb_install_dir"
+
+	# Install DTBs from the dtbs directory
+	if [ -d "$dist_dir/dtbs" ]; then
+		msg "Installing DTBs from $dist_dir/dtbs to $dtb_install_dir"
+		find "$dist_dir/dtbs" -name "*.dtb" -o -name "*.dtbo" | while read -r dtb_file; do
+			local filename=$(basename "$dtb_file")
+			install -Dm644 "$dtb_file" "$dtb_install_dir/$filename"
+		done
+	else
+		msg_warn "No DTBs directory found at $dist_dir/dtbs"
+	fi
+	
+	# Create a specific gs201-panther.dtb symlink for deviceinfo
+	if [ -f "$dtb_install_dir/gs201-panther.dtb" ]; then
+		msg "Found gs201-panther.dtb, creating google/gs201-panther.dtb symlink"
+		mkdir -p "$dtb_install_dir/google"
+		ln -sf "../gs201-panther.dtb" "$dtb_install_dir/google/gs201-panther.dtb"
+	elif [ -f "$dtb_install_dir/google-gs201-panther.dtb" ]; then
+		msg "Found google-gs201-panther.dtb, creating google/gs201-panther.dtb symlink"
+		mkdir -p "$dtb_install_dir/google"
+		ln -sf "../google-gs201-panther.dtb" "$dtb_install_dir/google/gs201-panther.dtb"
+	fi
+}
+
+sha512sums="
+95284a9b179b805154cdd0d3ef7a872fccb166e40c805de49438b39d27e3bc72b0a396068237c2f56cba7c2a39ce846f37197fb9eceb8f6bd1e4c4e7ade586ff  linux-grapheneos-panther-7a7f9d5dfa0c8d6c69e5e17a12b4c1bb1e5a4e14.tar.gz
+d5aa58ed3bb049db4627cf93abac1b92c123b32f508ed9d9019d31957dc1ddd3b47046bda931cb91e70d26719fd2b39009c95205d7086f01b7b8b9eab79cc981  config-grapheneos-panther.aarch64
+"

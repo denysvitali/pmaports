@@ -1,0 +1,28 @@
+# Reference: <https://postmarketos.org/devicepkg>
+pkgname=device-google-panther-downstream
+pkgdesc="Google Pixel 7 (Downstream)"
+pkgver=0.1
+pkgrel=0
+url="https://postmarketos.org"
+license="MIT"
+arch="aarch64"
+options="!check !archcheck"
+depends="
+	linux-google-panther-downstream
+	mkbootimg
+	postmarketos-base
+"
+makedepends="devicepkg-dev"
+source="deviceinfo"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+}
+
+sha512sums="
+f837be35195b22b62b0ff733ca10975c62421498d5499ef2d75789514037ca23e713cc0fd1004f2c0d948f906490f5bf795b06602d890652cd236b00db6555e0  deviceinfo
+"

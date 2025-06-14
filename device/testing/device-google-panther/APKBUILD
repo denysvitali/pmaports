@@ -1,0 +1,41 @@
+# Reference: <https://postmarketos.org/devicepkg>
+# Maintainer: PostmarketOS Community <community@postmarketos.org>
+pkgname=device-google-panther
+pkgdesc="Google Pixel 7"
+pkgver=1
+pkgrel=0
+url="https://postmarketos.org"
+license="MIT"
+arch="aarch64"
+options="!check !archcheck"
+depends="
+	mkbootimg
+	postmarketos-base
+"
+makedepends="devicepkg-dev"
+subpackages="
+	$pkgname-kernel-google-panther-downstream:kernel_google_panther_downstream
+"
+source="
+	deviceinfo
+	modules-initfs
+"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+}
+
+kernel_google_panther_downstream() {
+	pkgdesc="LineageOS downstream kernel for Google Pixel 7 (panther)"
+	depends="linux-google-panther-downstream"
+	devicepkg_subpackage_kernel $startdir $pkgname $subpkgname
+}
+
+sha512sums="
+b93d0e9c1cc0731483315c1950cdcd89bd71ef7594d9a540fb51bbec47bf286e2518e04ed33d4e3570116225447186bacff2dbe86097c22465f3c60bb8f09849  deviceinfo
+c69ed02a86a7cadcfa6c1802ffed0ba0855a9b7b2d7a43385b59a480006940e8b066f801cae87cd29e9b4b871b2ea0a79a9b10e5fb28a8cfa20082def155c717  modules-initfs
+"
