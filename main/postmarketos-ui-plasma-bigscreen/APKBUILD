@@ -2,7 +2,7 @@
 # Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=postmarketos-ui-plasma-bigscreen
 pkgver=1
-pkgrel=2
+pkgrel=3
 _commit_configs="a8bd93e279c222be6058ef46b065c11e88aa8400"
 pkgdesc="(Wayland) 10-feet variant of Plasma, made for big screen TVs"
 url="https://wiki.postmarketos.org/wiki/Plasma_Bigscreen"
@@ -26,7 +26,7 @@ source="$pkgname-$_commit_configs.tar.gz::https://invent.kde.org/plasma-bigscree
 	qtlogging.ini
 	nymphcast.desktop
 	"
-options="!check pmb:gpu-accel"
+options="!check pmb:drm"
 
 package() {
 	install -Dm644 -t "$pkgdir"/etc/xdg/QtProject \
@@ -44,6 +44,7 @@ openrc() {
 	install="$subpkgname.post-install $subpkgname.post-upgrade"
 	depends="
 		elogind-openrc
+		openrc
 		networkmanager-openrc
 		tinydm-openrc
 		"

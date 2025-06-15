@@ -8,11 +8,11 @@ deviceinfo_manufacturer="Amlogic"
 deviceinfo_codename="amlogic-tvbox"
 deviceinfo_year="2015"
 deviceinfo_dtb_p201="amlogic/meson-gxbb-p201"
-deviceinfo_dtb_p212="amlogic/meson-gxl-p212"
+deviceinfo_dtb_p212="amlogic/meson-gxl-s905x-p212"
 deviceinfo_dtb_p241="amlogic/meson-gxl-s805x-p241"
 deviceinfo_dtb_videostrong_kii_pro="amlogic/meson-gxbb-kii-pro"
-deviceinfo_dtb_xiaomi_once="amlogic/meson-gxl-s905x-xiaomi-once"
 deviceinfo_dtb_ugoos_am3="amlogic/meson-gxm-ugoos-am3"
+deviceinfo_dtb_xiaomi_aquaman="amlogic/meson-gxl-s805y-xiaomi-aquaman"
 deviceinfo_arch="aarch64"
 deviceinfo_partition_type="msdos"
 
@@ -21,6 +21,7 @@ deviceinfo_chassis="desktop"
 deviceinfo_keyboard="false"
 deviceinfo_external_storage="true"
 deviceinfo_gpu_accelerated="true"
+deviceinfo_disable_dhcpd="true"
 
 # Bootloader related
 deviceinfo_flash_method="none"
@@ -30,6 +31,10 @@ deviceinfo_kernel_cmdline="console=ttyAML0,115200n8"
 # For devices where we chainload a mainline u-boot from the vendor one, we 
 # can just use extlinux.
 deviceinfo_generate_extlinux_config="true"
+
+# For other devices where a FIT image is supported, generate one
+deviceinfo_generate_uboot_fit_images="true"
+deviceinfo_uboot_boardname="amlogic-tvbox"
 
 # For the rest, generate a uImage.
 deviceinfo_generate_legacy_uboot_initfs="true"

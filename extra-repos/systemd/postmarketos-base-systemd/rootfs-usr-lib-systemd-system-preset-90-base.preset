@@ -1,7 +1,6 @@
 # overrides for systemd
 disable systemd-network*
 disable systemd-homed*
-disable systemd-resolved*
 disable systemd-journald-audit.socket
 
 # starting multipathd on systems with no multipath hardware can soft-hang
@@ -63,6 +62,11 @@ enable kodi.service
 ## COSMIC
 enable cosmic-greeter.service
 
+## niri
+# NOTE: This is a generic greeter so it can be moved under a more generic
+# header if another UI uses it.
+enable wlgreet.service
+
 # Waydroid
 enable sensorfwd.service
 enable waydroid-container.service
@@ -88,6 +92,7 @@ enable iio-sensor-proxy.service
 enable hfd-service.service
 
 ## qcom
+enable 81voltd.service
 enable diag-router.service
 enable msm-modem-uim-selection.service
 enable pd-mapper.service
@@ -99,3 +104,11 @@ enable tqftpserv.service
 
 ## pinephone{,-pro}
 enable eg25-manager.service
+
+## chromebook
+enable keyd.service
+enable cros-keyboard-map.service
+
+## librem5
+enable l5-brcm-bt-enable.service
+enable librem5-base-defaults.librem5-lockdown-support.service

@@ -15,7 +15,6 @@ fi
 # Shell: shellcheck
 sh_files="
 	./main/mdss-fb-init-hack/mdss-fb-init-hack.sh
-	./main/postmarketos-base/rootfs-usr-lib-firmwareload.sh
 	./main/postmarketos-base-ui/rootfs-usr-lib-NetworkManager-dispatcher.d-50-dns-filter.sh
 	./main/postmarketos-base-ui/rootfs-usr-lib-NetworkManager-dispatcher.d-50-tethering.sh
 	./main/postmarketos-installkernel/installkernel-pmos
@@ -39,10 +38,11 @@ sh_files="
 	$(find . -path './main/postmarketos-mvcfg/*.sh')
 
 	$(find . -path './.ci/**.sh')
+	$(find . -path '**/tests/*.sh')
 "
 
 for file in $sh_files; do
 	echo "Test with shellcheck: $file"
 	cd "$DIR/$(dirname "$file")"
-	shellcheck -e SC1008 -e SC3043 -x "$(basename "$file")"
+	shellcheck -S warning -e SC1008 -e SC3043 -x "$(basename "$file")"
 done

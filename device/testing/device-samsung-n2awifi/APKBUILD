@@ -1,21 +1,25 @@
+# Maintainer: Hendrik Noack <hendrik.noack@protonmail.com>
 # Reference: <https://postmarketos.org/devicepkg>
 pkgname=device-samsung-n2awifi
-pkgdesc="Samsung Galaxy Tab PRO 10.1 (WiFi)"
-pkgver=3
+pkgdesc="Samsung Galaxy Tab Pro 10.1 WiFi"
+pkgver=5
 pkgrel=0
 url="https://postmarketos.org"
 license="MIT"
 arch="armv7"
 options="!check !archcheck"
 depends="
+	firmware-samsung-n2awifi-mainline
+	linux-firmware-brcm
+	linux-firmware-s5p-mfc
+	linux-postmarketos-exynos5
 	mkbootimg
 	postmarketos-base
 "
 makedepends="devicepkg-dev"
-source="deviceinfo"
-subpackages="
-	$pkgname-kernel-downstream:kernel_downstream
-	$pkgname-kernel-mainline:kernel_mainline
+source="
+	deviceinfo
+	modules-initfs
 "
 
 build() {
@@ -26,28 +30,7 @@ package() {
 	devicepkg_package $startdir $pkgname
 }
 
-kernel_downstream() {
-	pkgdesc="Display works, wifi is broken (see device table for details)"
-	depends="
-		linux-samsung-n2awifi
-		msm-fb-refresher
-		postmarketos-base-downstream
-		postmarketos-base-downstream-disable-udev-v4l
-	"
-	_pmb_recommends="firmware-samsung-n2awifi-downstream>=1-r0"
-	devicepkg_subpackage_kernel $startdir $pkgname $subpkgname
-}
-
-kernel_mainline() {
-	pkgdesc="Mainline WIP (display and wifi work but not much else)"
-	depends="linux-postmarketos-exynos5"
-	_pmb_recommends="
-		firmware-samsung-n2awifi-mainline>=1-r0
-		linux-firmware-s5p-mfc
-		"
-	devicepkg_subpackage_kernel $startdir $pkgname $subpkgname
-}
-
 sha512sums="
-5c1097b8c9188c4fb339c0f03b7df98f4441e40e2de82decb06a03ed7c76c8cd9981d0b16fbabaec618ea620e4c085ca547ce1d7c9e243d9c5c4e5507342ce14  deviceinfo
+3f48e07df64d843fb95d063a2738303fe43622b1fd0cdab89690465fc0153ba66cf44232e5e1b615af50ed146b851bc83dab0804f48c976de8cd2109e18653ec  deviceinfo
+4b3cb9dca85c04f1bfc5676029a6ae225409f173c6f0fc025786c1a72326dabad4b5ad75d0dd9a41cdebe8c15db5ca9761e15f3b9f99f8bf70b19769bb116fe6  modules-initfs
 "

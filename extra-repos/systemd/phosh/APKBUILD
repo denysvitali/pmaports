@@ -1,9 +1,9 @@
 # Forked from Alpine for systemd split func
 maintainer="fossdd <fossdd@pwned.life>"
 pkgname=phosh
-_pkgver=0.45.0
+_pkgver=0.47.0
 pkgver=9999$_pkgver
-pkgrel=0
+pkgrel=2
 pkgdesc="Wayland shell for GNOME on mobile devices"
 # armhf: blocked by gnome-shell-schemas
 arch="all !armhf"
@@ -11,13 +11,12 @@ url="https://gitlab.gnome.org/World/Phosh/phosh"
 license="GPL-3.0-only"
 triggers="$pkgname.trigger=/usr/lib/phosh/plugins/prefs"
 depends="
+	adwaita-fonts
 	adwaita-icon-theme
 	bash
 	dbus-x11
 	dbus:org.freedesktop.Secrets
 	desktop-file-utils
-	font-adobe-source-code-pro
-	font-cantarell
 	gnome-control-center
 	gnome-session
 	gnome-settings-daemon
@@ -70,6 +69,8 @@ subpackages="
 	$pkgname-systemd
 	"
 source="https://sources.phosh.mobi/releases/phosh/phosh-${_pkgver/_/.}.tar.xz
+	media-player.patch
+	update-force-adaptive-list.patch
 	"
 builddir="$srcdir/$pkgname-${_pkgver/_/.}"
 # TODO: crossdirect disabled due to armv7 crosscompile failure on x86_64, see
@@ -93,7 +94,7 @@ build() {
 }
 
 check() {
-	xvfb-run -a meson test --no-rebuild --print-errorlogs -C output
+	xvfb-run -a meson test --print-errorlogs -C output
 }
 
 package() {
@@ -106,12 +107,13 @@ portalsconf() {
 }
 
 libphosh_dev() {
-	local _soname="libphosh-${_pkgver%.*}"
-	amove usr/include/$_soname
-	amove usr/lib/$_soname.so
-	amove usr/lib/pkgconfig/$_soname.pc
+	amove usr/include/libphosh-*
+	amove usr/lib/libphosh-*.so
+	amove usr/lib/pkgconfig/libphosh-*.pc
 }
 
 sha512sums="
-bb9ae902c979d410c8ab85ed04c1bdb7f99d77a0e7fe84c31485e8e9c8fdc49cc5475921b8e5839a73db9d615df5c17114149fd06642d6b37fa3fd08d8ebf1bf  phosh-0.45.0.tar.xz
+19c150d28921b383269e4c95d353b7ea69e62cc4075a7a1e1523aa0977b347898d16df7d88861e5d029469a881623e15673ee270c3c514db123aec683ec8194d  phosh-0.47.0.tar.xz
+20bf4d50611560e14182c7cb139aadcf59508f57caefe564e0cfe7d29e7c3e9985c787f832f353b7c7f017e6b373ef0a7b69368071ac0ba4b2a6160ad606f0a9  media-player.patch
+b4cf4c1dd5993cdb1d77daa066be46768e65231a3b9d89aba02e7326882b0dfca69ca4fa69cb2c25b41d974e81f1a9a858e7bda669d376097a6c3615bf665c8c  update-force-adaptive-list.patch
 "

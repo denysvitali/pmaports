@@ -1,0 +1,28 @@
+# Modules for Google Pixel 7 (panther) - Google Tensor G2 (GS201)
+# Display and touch
+samsung_drm
+panel_samsung_s6e3fc3
+panel_samsung_s6e3hc3
+goodix_ts
+fts_touch
+
+# Storage (UFS)
+ufs-exynos
+phy-exynos-ufs
+
+# USB and charging
+usb_f_dm
+usb_f_dm1
+google_charger
+
+# Sensors and misc
+proximity_goog
+
+# Audio
+aoc_audio_dev
+
+# Camera
+lwis
+
+# Modem
+pcie-exynos-gs

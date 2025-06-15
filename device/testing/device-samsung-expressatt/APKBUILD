@@ -1,14 +1,20 @@
 # Reference: <https://postmarketos.org/devicepkg>
 pkgname=device-samsung-expressatt
 pkgdesc="Samsung Galaxy Express SGH-I437"
-pkgver=1
-pkgrel=0
+pkgver=2
+pkgrel=1
 url="https://postmarketos.org"
 license="MIT"
 arch="armv7"
 options="!check !archcheck"
-depends="postmarketos-base linux-postmarketos-qcom-msm8960 mkbootimg"
+depends="postmarketos-base mkbootimg linux-firmware-none"
 makedepends="devicepkg-dev"
+subpackages="
+	$pkgname-kernel-next:kernel_next
+	$pkgname-kernel-edge:kernel_edge
+	$pkgname-kernel-stable:kernel_stable
+	$pkgname-kernel-lts:kernel_lts
+"
 source="deviceinfo"
 
 build() {
@@ -19,7 +25,30 @@ package() {
 	devicepkg_package $startdir $pkgname
 }
 
+kernel_next() {
+	pkgdesc="Unstable next kernel (linux-next)"
+	depends="linux-next"
+	devicepkg_subpackage_kernel $startdir $pkgname $subpkgname
+}
+
+kernel_edge() {
+	pkgdesc="Mainline kernel from Alpine Linux (linux-edge)"
+	depends="linux-edge"
+	devicepkg_subpackage_kernel $startdir $pkgname $subpkgname
+}
+
+kernel_stable() {
+	pkgdesc="Mainline kernel from Alpine Linux with LTS config (linux-stable)"
+	depends="linux-stable"
+	devicepkg_subpackage_kernel $startdir $pkgname $subpkgname
+}
+
+kernel_lts() {
+	pkgdesc="Long term support (LTS) kernel from Alpine Linux (linux-lts)"
+	depends="linux-lts"
+	devicepkg_subpackage_kernel $startdir $pkgname $subpkgname
+}
 
 sha512sums="
-e0884e5403c774c8609607f9158895028cf04a000df1f0d8054e22258e42f404671fc39ead2978d16d84c08c5f3f4136bed1e03a4dba4e1422351cda5f46f074  deviceinfo
+29e784303698fe1dc56a9d952cb2081527efb4422d5e729e622a2db51274e65c7a612ba331acfbfa04529f77bbc62896f018d2cdd98bd8cc64900d306c4a07d7  deviceinfo
 "

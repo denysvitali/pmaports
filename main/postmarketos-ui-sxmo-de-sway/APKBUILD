@@ -5,7 +5,7 @@
 # Co-Maintainer: Aren Moynihan <aren@peacerevolution.org>
 pkgname=postmarketos-ui-sxmo-de-sway
 pkgver=1.17.1 # Bump this so the file names in bpo are correct
-pkgrel=2
+pkgrel=5
 pkgdesc="Simple Mobile: Mobile environment based on SXMO and running on sway"
 url="http://sr.ht/~mil/Sxmo"
 # riscv64: builder currently stuck, libphonenumber needs rebuild
@@ -13,17 +13,11 @@ arch="noarch !armhf !riscv64"
 license="AGPL-3.0-only"
 depends="
 	postmarketos-base-ui
+	postmarketos-base-ui-audio
 	postmarketos-base-ui-networkmanager
 
 	sxmo-utils-sway
 	sxmo-utils-audio-bluetooth
-
-	seatd-openrc
-	tinydm-openrc
-	modemmanager-openrc
-	networkmanager-openrc
-	bluez-openrc
-	iio-sensor-proxy-openrc
 	"
 install="
 	$pkgname.post-install
@@ -46,9 +40,26 @@ _pmb_recommends="
 	"
 provides="postmarketos-ui-sxmo"
 provider_priority=10
-options="!check pmb:systemd-never"
+options="!check pmb:drm"
+subpackages="$pkgname-openrc"
 
 package() {
 	mkdir -p "$pkgdir"
 	mkdir -p "$pkgdir"/etc/sway/config.d
+}
+
+openrc() {
+	install_if="$pkgname=$pkgver-r$pkgrel openrc"
+	install="$subpkgname.post-install $subpkgname.post-upgrade"
+	depends="
+		openrc
+		seatd-openrc
+		tinydm-openrc
+		modemmanager-openrc
+		networkmanager-openrc
+		bluez-openrc
+		iio-sensor-proxy-openrc
+	"
+
+	mkdir "$subpkgdir"
 }

@@ -1,8 +1,8 @@
 # Forked from Alpine to add systemd!
 
 pkgname=plasma-workspace
-pkgver=99996.3.3
-_pkgver=6.3.3
+pkgver=99996.3.5
+_pkgver=6.3.5
 pkgrel=0
 pkgdesc="KDE Plasma Workspace"
 # armhf blocked by qt6-qtdeclarative
@@ -202,5 +202,5 @@ x11() {
 }
 
 sha512sums="
-7711313fc93f052e898ef7ba883a87e17217b94c2658bb586a9e7623e34971a5add986d63c4bd7dadc7152fc6ab592a01840034d384312de7711dfb6112f114b  plasma-workspace-6.3.3.tar.xz
+de9cdef94de4f210a0894d6be4e4dd56f37d500896f44a75115f494dc1534e8e189d8111c5e4b6b8149565f583886f11c15aa580cff9d57b6c9b5425eb4b0638  plasma-workspace-6.3.5.tar.xz
 "

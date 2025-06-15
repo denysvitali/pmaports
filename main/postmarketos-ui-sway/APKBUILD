@@ -2,8 +2,8 @@
 # Maintainer: Oliver Smith <ollieparanoid@postmarketos.org>
 pkgname=postmarketos-ui-sway
 pkgver=3.1
-pkgrel=8
-pkgdesc="(Wayland) Tiling WM, drop-in replacement for i3wm (DOES NOT RUN WITHOUT HW ACCELERATION!)"
+pkgrel=10
+pkgdesc="(Wayland) Tiling WM, drop-in replacement for i3wm"
 url="https://postmarketos.org"
 arch="noarch"
 license="GPL-3.0-or-later"
@@ -14,6 +14,7 @@ depends="
 	elogind
 	polkit-elogind
 	postmarketos-base-ui
+	postmarketos-base-ui-audio
 	postmarketos-base-ui-networkmanager
 	sway
 	swaybg
@@ -36,7 +37,7 @@ source="
 	etc-sway-config
 	etc-sway-config.d-00-logo-key.conf
 	"
-options="!check pmb:gpu-accel" # no testsuite
+options="!check pmb:drm" # no testsuite
 replaces="sway"
 
 package() {
@@ -57,9 +58,10 @@ openrc() {
 		elogind-openrc
 		modemmanager-openrc
 		networkmanager-openrc
+		openrc
 		seatd-openrc
 		tinydm-openrc
-		"
+	"
 
 		mkdir -p "$subpkgdir"
 }

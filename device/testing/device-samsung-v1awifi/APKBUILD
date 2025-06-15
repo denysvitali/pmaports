@@ -1,23 +1,26 @@
+# Maintainer: Hendrik Noack <hendrik.noack@protonmail.com>
 # Reference: <https://postmarketos.org/devicepkg>
 pkgname=device-samsung-v1awifi
 pkgdesc="Samsung Galaxy Note Pro 12.2 WiFi"
-pkgver=3
+pkgver=5
 pkgrel=0
 url="https://postmarketos.org"
 license="MIT"
 arch="armv7"
 options="!check !archcheck"
-makedepends="devicepkg-dev"
 depends="
-	postmarketos-base
-	postmarketos-base-downstream
-	postmarketos-base-downstream-disable-udev-v4l
-	linux-samsung-v1awifi
+	firmware-samsung-v1awifi-mainline
+	linux-firmware-brcm
+	linux-firmware-s5p-mfc
+	linux-postmarketos-exynos5
 	mkbootimg
-	msm-fb-refresher
+	postmarketos-base
 "
-subpackages="$pkgname-nonfree-firmware:nonfree_firmware"
-source="deviceinfo"
+makedepends="devicepkg-dev"
+source="
+	deviceinfo
+	modules-initfs
+"
 
 build() {
 	devicepkg_build $startdir $pkgname
@@ -27,12 +30,7 @@ package() {
 	devicepkg_package $startdir $pkgname
 }
 
-nonfree_firmware() {
-	pkgdesc="Non-free firmware for the Samsung Galaxy Note Pro 12.2 WiFi"
-	depends="firmware-samsung-v1awifi"
-	mkdir "$subpkgdir"
-}
-
 sha512sums="
-31bfd9df3dd636252ee60556da2228529fc2cb6cce1c932a4ff274d274474344217d6588f1daaa5a1ae2289f33ddc787a9d40b6caf0da3f0a780630059adf3b1  deviceinfo
+09c4bdca040cc659bac75d50c51e95b146ab9f98929799f802cfe011f9e5728fe2722b1138d5d557d143bc9051e173067e732ce9bd756960e0ea7f8f679fdac7  deviceinfo
+4b3cb9dca85c04f1bfc5676029a6ae225409f173c6f0fc025786c1a72326dabad4b5ad75d0dd9a41cdebe8c15db5ca9761e15f3b9f99f8bf70b19769bb116fe6  modules-initfs
 "

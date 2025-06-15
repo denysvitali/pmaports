@@ -8,7 +8,7 @@ fi
 
 pkgname=musl-riscv64
 pkgver=1.2.5
-pkgrel=10
+pkgrel=12
 arch="x86_64"
 subpackages="musl-dev-riscv64:package_dev"
 
@@ -57,6 +57,6 @@ package_dev() {
 }
 
 sha512sums="
-4c76e3c4e94ab96d49c51ad01205e846280f851cff06b8c6ab8269d2ac99bbede29da9600fa60130c266d95da21bccdb00ad4b18123964774835e8014611e53e  musl-1.2.5-r10-riscv64-edge.apk
-27e6923fb43b1cd87b15e42edec6c658b7983b4e8c001bb67f5fc79cb124a46af92440e75676460eb3bed3a7acdd5ad142f03ba7dd040aae056431b8cc56818d  musl-dev-1.2.5-r10-riscv64-edge.apk
+1ac4e43f1b9540b1d4b32473f0f590285d699dbebada5d4eee1d079b12a8e4fbc0c46762004a1f19ca2691112bfc452d0577c8aefeb78524f70be7196d909476  musl-1.2.5-r12-riscv64-edge.apk
+a67849b211eae939bf8cdd9aeff681260a239f0981ffaf73bd247fa34cb623dafe9ceac25e18727a71dd15cbfe466010e804a9f39fcd4a072dab7e287caf99a4  musl-dev-1.2.5-r12-riscv64-edge.apk
 "

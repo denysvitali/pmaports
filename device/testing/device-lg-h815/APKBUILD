@@ -1,21 +1,17 @@
 # Reference: <https://postmarketos.org/devicepkg>
 pkgname=device-lg-h815
 pkgdesc="LG G4 (h815)"
-pkgver=1
-pkgrel=4
+pkgver=2
+pkgrel=0
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
 depends="
+	linux-postmarketos-qcom-msm8994
 	mkbootimg
 	postmarketos-base
-	postmarketos-config-nftables-openusb
 "
 makedepends="devicepkg-dev"
-subpackages="
-	$pkgname-kernel-downstream:kernel_downstream
-	$pkgname-kernel-mainline:kernel_mainline
-"
 source="deviceinfo"
 options="!check !archcheck"
 
@@ -23,22 +19,10 @@ build() {
 	devicepkg_build $startdir $pkgname
 }
 
-kernel_downstream() {
-	pkgdesc="Downstream kernel"
-	depends="linux-lg-h815 msm-fb-refresher"
-	devicepkg_subpackage_kernel $startdir $pkgname $subpkgname
-}
-
-kernel_mainline() {
-	pkgdesc="mainline kernel"
-	depends="linux-postmarketos-qcom-msm8994"
-	devicepkg_subpackage_kernel $startdir $pkgname $subpkgname
-}
-
 package() {
 	devicepkg_package $startdir $pkgname
 }
 
 sha512sums="
-a8a9efb69e1c1b83e40145b36744e929d1aa811f2b5240be033160f2a31fdfb9c8adccf1224f768e58b0529b0c3683346769f26d61285d09172c7a2818d5a21d  deviceinfo
+5f71633a90cf304d4e9e3f4457b656bc685d46597f26391a886c1d23b7ef3b5f5c5e7790b7d29f18465bc9ec754ffefacfc4027a9106a64fdb1786a83a87af3a  deviceinfo
 "

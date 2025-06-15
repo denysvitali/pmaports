@@ -355,7 +355,8 @@ mount_subpartitions() {
 	attempt_start=$(get_uptime_seconds)
 	wait_seconds=10
 	echo "Trying to mount subpartitions for $wait_seconds seconds..."
-	while [ -z "$(find_root_partition)" ]; do
+	find_root_partition
+	while [ -z "$PMOS_ROOT" ]; do
 		partitions="$android_parts $(grep -v "loop\|ram" < /proc/diskstats |\
 			sed 's/\(\s\+[0-9]\+\)\+\s\+//;s/ .*//;s/^/\/dev\//')"
 		for partition in $partitions; do
@@ -367,7 +368,8 @@ mount_subpartitions() {
 					# Ensure that this was the *correct* subpartition
 					# Some devices have mmc partitions that appear to have
 					# subpartitions, but aren't our subpartition.
-					if [ -n "$(find_root_partition)" ]; then
+					find_root_partition
+					if [ -n "$PMOS_ROOT" ]; then
 						break
 					fi
 					kpartx -d "$partition"
@@ -448,7 +450,9 @@ find_partition() {
 }
 
 find_root_partition() {
-	[ -n "$PMOS_ROOT" ] && echo "$PMOS_ROOT" && return
+	# $1: variable to set result to
+	local result
+	result=$1
 
 	# The partition layout is one of the following:
 	# a) boot, root partitions on sdcard
@@ -457,26 +461,32 @@ find_root_partition() {
 	#
 	# mount_subpartitions() must get executed before calling
 	# find_root_partition(), so partitions from b) also get found.
+	if [ -z "$PMOS_ROOT" ]; then
+		PMOS_ROOT="$(find_partition "$root_uuid" "$root_path" "pmOS_root" "TYPE=crypto_LUKS")"
+	fi
 
-	PMOS_ROOT="$(find_partition "$root_uuid" "$root_path" "pmOS_root" "TYPE=crypto_LUKS")"
-	echo "$PMOS_ROOT"
+	# Set the result, since using a subshell prevents us from caching
+	if [ -n "$result" ]; then eval "$result=\"$PMOS_ROOT\""; fi
 }
 
 find_boot_partition() {
-	[ -n "$PMOS_BOOT" ] && echo "$PMOS_BOOT" && return
+	# $1: variable to set result to
+	local result
+	result=$1
 
-	# Before doing anything else check if we are using a stowaway
-	if [ "$stowaway" = "y" ]; then
-		mount_root_partition
-		PMOS_BOOT="/sysroot/boot"
-		mount --bind /sysroot/boot /boot
-
-		echo "$PMOS_BOOT"
-		return
+	if [ -z "$PMOS_BOOT" ]; then
+		# Before doing anything else check if we are using a stowaway
+		if [ "$stowaway" = "y" ]; then
+			mount_root_partition
+			PMOS_BOOT="/sysroot/boot"
+			mount --bind /sysroot/boot /boot
+		else
+			PMOS_BOOT="$(find_partition "$boot_uuid" "$boot_path" "pmOS_boot")"
+		fi
 	fi
 
-	PMOS_BOOT="$(find_partition "$boot_uuid" "$boot_path" "pmOS_boot")"
-	echo "$PMOS_BOOT"
+	# Set the result, since using a subshell prevents us from caching
+	if [ -n "$result" ]; then eval "$result=\"$PMOS_BOOT\""; fi
 }
 
 get_partition_type() {
@@ -545,7 +555,7 @@ mount_boot_partition() {
 	local partition
 	local mount_opts
 
-	partition="$(find_boot_partition)"
+	find_boot_partition partition
 	mount_opts="-o nodev,nosuid,noexec"
 
 	# We dont need to do this when using stowaways
@@ -594,42 +604,36 @@ extract_initramfs_extra() {
 	gzip -d -c "$initramfs_extra" | cpio -iu
 }
 
-wait_boot_partition() {
-	find_boot_partition
-	if [ -n "$PMOS_BOOT" ]; then
+wait_partition() {
+	local description findfunc partition
+	description="$1"
+	findfunc="$2"
+
+	$findfunc partition
+	if [ -n "$partition" ]; then
 		return
 	fi
 
-	show_splash "Waiting for boot partition..."
+	show_splash "Waiting for $description partition..."
 	for _ in $(seq 1 30); do
-		if [ -n "$(find_boot_partition)" ]; then
+		sleep 1
+		$findfunc partition
+		if [ -n "$partition" ]; then
 			return
 		fi
-		sleep 1
 		check_keys ""
 	done
 
-	show_splash "ERROR: Boot partition not found!\\nhttps://postmarketos.org/troubleshooting"
+	show_splash "ERROR: $description partition not found!\\nhttps://postmarketos.org/troubleshooting"
 	fail_halt_boot
 }
 
+wait_boot_partition() {
+	wait_partition "boot" "find_boot_partition"
+}
+
 wait_root_partition() {
-	find_root_partition
-	if [ -n "$PMOS_ROOT" ]; then
-		return
-	fi
-
-	show_splash "Waiting for root partition..."
-	for _ in $(seq 1 30); do
-		if [ -n "$(find_root_partition)" ]; then
-			return
-		fi
-		sleep 1
-		check_keys ""
-	done
-
-	show_splash "ERROR: Root partition not found!\\nhttps://postmarketos.org/troubleshooting"
-	fail_halt_boot
+	wait_partition "root" "find_root_partition"
 }
 
 delete_old_install_partition() {
@@ -637,7 +641,10 @@ delete_old_install_partition() {
 	# The on-device installer leaves a "pmOS_deleteme" (p3) partition after
 	# successful installation, located after "pmOS_root" (p2). Delete it,
 	# so we can use the space.
-	partition="$(find_root_partition | sed 's/2$/3/')"
+
+	# We definitely found the partition by this point so no need to call
+	# find_root_partition
+	partition="$(echo "$PMOS_ROOT" | sed 's/2$/3/')"
 	if ! blkid "$partition" | grep -q pmOS_deleteme; then
 		return
 	fi
@@ -663,7 +670,7 @@ mount_root_partition() {
 
 	local partition
 
-	partition="$(find_root_partition)"
+	find_root_partition partition
 
 	echo "Mount root partition ($partition) to /sysroot (read-write) with options ${rootfsopts#,}"
 	type="$(get_partition_type "$partition")"
@@ -678,6 +685,12 @@ mount_root_partition() {
 	if ! modprobe "$type"; then
 		info "Unable to load module '$type' - assuming it's built-in"
 	fi
+
+	# btrfs may be using multiple backing block devices, scan for the rest of them
+	if [ "$type" = "btrfs" ]; then
+		btrfs device scan
+	fi
+
 	if ! mount -t "$type" -o rw"$rootfsopts" "$partition" /sysroot; then
 		echo "ERROR: unable to mount root partition!"
 		show_splash "ERROR: unable to mount root partition\\nhttps://postmarketos.org/troubleshooting"
@@ -780,6 +793,7 @@ setup_usb_network_configfs() {
 	usb_serialnumber="${deviceinfo_usb_serialnumber:-postmarketOS}"
 	usb_network_function="${deviceinfo_usb_network_function:-ncm.usb0}"
 	usb_network_function_fallback="rndis.usb0"
+	usb_network_host_addr="${deviceinfo_usb_network_host_addr:-}"
 
 	echo "  Setting up USB gadget through configfs"
 	# Create an usb gadet configuration
@@ -811,6 +825,11 @@ setup_usb_network_configfs() {
 		|| echo "  Couldn't create $CONFIGFS/g1/configs/c.1/strings/0x409"
 	echo "USB network" > $CONFIGFS/g1/configs/c.1/strings/0x409/configuration \
 		|| echo "  Couldn't write configration name"
+	if [ -n "$usb_network_host_addr" ]; then
+		echo "$usb_network_host_addr" > $CONFIGFS/g1/functions/"$usb_network_function"/host_addr \
+			|| echo "  Couldn't write host addr"
+	fi
+
 
 	# Link the network instance to the configuration
 	ln -s $CONFIGFS/g1/functions/"$usb_network_function" $CONFIGFS/g1/configs/c.1 \

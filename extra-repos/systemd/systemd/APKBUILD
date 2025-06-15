@@ -1,21 +1,21 @@
 # Contributor: Jakub Panek <me@panekj.dev>
-# Maintainer: Caleb Connolly <caleb@postmarketos.org>
+# Maintainer: Casey Connolly <kcxt@postmarketos.org>
 # Co-Maintainer: jane400 <jane400@postmarketos.org>
 
+#########################################################
+# Make sure to upgrade systemd-stage0 at the same time! #
+#########################################################
+
 pkgname=systemd
-# currently tracking git MR
-pkgver=256.11
+pkgver=257.5
 _pkgver="musl-v${pkgver//_/-}-split-usr"
-pkgrel=3
+pkgrel=4
 pkgdesc="System and service manager"
 url="https://github.com/systemd/systemd"
 arch="all !ppc64le !s390x" # blocked by pmboostrap not supporting
 license="MIT AND GPL-2.0-only AND LGPL-2.1-or-later"
 options="pmb:strict !check" # few tests fail, need to debug. We use alpine dbus for building, systemd-dbus for runtime
 
-# FIXME: it turns out abuild doesn't let you have arbitrary triggers?! what century is this???
-# So we have to trigger everything on everything and do a bunch of reloading that
-# isn't necessary most of the time...
 triggers="$pkgname.trigger=/usr/lib/systemd/catalog:\
 /usr/lib/udev/hwdb.d:\
 /usr/lib/binfmt.d:\
@@ -75,26 +75,14 @@ makedepends="
 	util-linux-dev
 	xz-dev
 	zstd-dev
-	"
 
-# We add these as explicit dependencies to ensure we get the systemd variants
-# and not the Alpine ones.
-if [ -z "$BOOTSTRAP" ] || [ "$BOOTSTRAP" -gt 2 ]; then
-	makedepends="$makedepends
-		dbus-dev
-		polkit-dev
+	dbus-dev
+	polkit-dev
 	"
-else
-	makedepends="$makedepends
-		linux-pam-dev>1.0
-		dbus-dev<999
-		polkit-dev<999
-	"
-fi
 
 # provides=openrc and openrc-settingsd to prevent those packages
 # getting pulled in, as there are some conflicts (dbus)
-provides="busctl eudev openrc-settingsd=$pkgver-r$pkgrel"
+provides="busctl eudev openrc-settingsd=$pkgver-r$pkgrel systemd-stage0=$pkgver-r$pkgrel"
 provider_priority=100
 
 install="$pkgname.pre-install"
@@ -174,7 +162,6 @@ build() {
 		-Dkmod-path=/bin/kmod \
 		-Dsulogin-path=/sbin/sulogin \
 		\
-		-Dwheel-group=true \
 		-Ddebug-shell=/bin/ash \
 		-Dpolkit=enabled \
 		-Dpam=enabled \
@@ -269,10 +256,11 @@ udevd() {
 	amove usr/lib/udev
 
 	# Install symlinks to be more like eudev
-	# FIXME: systemd-udevd gets placed at /usr/bin/udevadm
+	# FIXME: After usr merge, convert these into relative symlinks to support
+	# installing this package into an arbitrary directory
 	mkdir -p "$subpkgdir"/sbin "$subpkgdir"/bin
-	ln -sf ../usr/lib/systemd/systemd-udevd "$subpkgdir"/sbin/udevd
-	ln -sf ../usr/lib/systemd/systemd-udevd "$subpkgdir"/bin/udevadm
+	ln -sf /usr/lib/systemd/systemd-udevd "$subpkgdir"/sbin/udevd
+	ln -sf /usr/lib/systemd/systemd-udevd "$subpkgdir"/bin/udevadm
 }
 
 udevd_bcomp() {
@@ -316,7 +304,6 @@ networkd() {
 	amove etc/systemd/network
 	amove etc/systemd/networkd.conf
 	amove usr/share/polkit-1/rules.d/systemd-networkd.rules
-	amove usr/lib/systemd/systemd-network-generator
 	amove usr/lib/systemd/systemd-networkd
 	amove usr/lib/systemd/systemd-networkd-wait-online
 	amove usr/lib/systemd/network
@@ -434,19 +421,24 @@ x11() {
 	pkgdesc="systemd x11"
 	install_if="$pkgname=$pkgver-r$pkgrel xorg-server-common"
 
-	amove usr/lib/tmpfiles.d/x11.conf
 	amove etc/X11/xinit/xinitrc.d/50-systemd-user.sh
 }
 
 dev() {
-	provides="eudev-dev udev-dev"
+	provides="eudev-dev udev-dev systemd-stage0-dev=$pkgver-r$pkgrel"
 	provider_priority=100
 
 	default_dev
 }
 
+libs() {
+	provides="systemd-stage0-libs=$pkgver-r$pkgrel"
+
+	default_libs
+}
+
 sha512sums="
-3cd75d5ba29a3994230ecbe16ea106d4fe05d7d76e7cd9b9a6a63177f09d8c362c055a1fea49e6c9a10a949afc07a6c75fe75dad2bd302d94e41a81f8ddb2a15  systemd-musl-v256.11-split-usr.tar.gz
+fd9f6c8c3ee9c13b66fc52c94492bcb563280acd9811bc5f7e4ccf28e5d664b330b356ba77110146bece8801eb49e38aa5c85b6422cc48b1d326d8cddcf83ba8  systemd-musl-v257.5-split-usr.tar.gz
 81c897fed8a3fbfb67ec591b2398a5d65e4af1b3ef379376c157c98d71f085b707f8ebc896d5571a94f99f8fc84fd6b43e3b879ca9b0d57fc6c4596034c7a777  wired.network
 cc1c8f00a0ff1c94fcebe0e6d48b3d1a74c51b9d86bf255762cecda4b4d0c08e313f817aaaa301f41133eaf73c525e36c0f48659b263a7ed990080de9f3cec6c  systemd-apk-macros.sh
 "

@@ -20,8 +20,7 @@ deviceinfo_gpu_accelerated="false"
 
 # Fastboot related
 deviceinfo_generate_bootimg="true"
-deviceinfo_kernel_cmdline_mainline="console=ttyMSM2,115200,n8 fw_devlink=permissive"
-deviceinfo_kernel_cmdline_downstream="console=ttyHSL0,115200,n8"
+deviceinfo_kernel_cmdline="console=ttyMSM2,115200,n8 fw_devlink=permissive"
 deviceinfo_generate_bootimg="true"
 deviceinfo_bootimg_qcdt="false"
 deviceinfo_bootimg_dtb_second="false"
@@ -33,5 +32,4 @@ deviceinfo_flash_offset_second="0x00f00000"
 deviceinfo_flash_offset_tags="0x00000100"
 
 # Extra
-deviceinfo_getty_mainline="ttyMSM2;115200"
-deviceinfo_getty_downstream="ttyHSL0;115200"
+deviceinfo_getty="ttyMSM2;115200"
