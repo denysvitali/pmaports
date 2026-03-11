@@ -1,0 +1,58 @@
+name: Build Surface Pro X packages
+
+on:
+  push:
+    branches: [feature/spx]
+    paths:
+      - 'device/testing/device-microsoft-surface-pro-x/**'
+      - 'device/testing/firmware-microsoft-surface-pro-x/**'
+      - 'device/testing/linux-postmarketos-qcom-sc8180x-surface/**'
+      - '.github/workflows/build-spx.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'device/testing/device-microsoft-surface-pro-x/**'
+      - 'device/testing/firmware-microsoft-surface-pro-x/**'
+      - 'device/testing/linux-postmarketos-qcom-sc8180x-surface/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout pmaports
+        uses: actions/checkout@v4
+
+      - name: Install pmbootstrap
+        run: pip install pmbootstrap
+
+      - name: Configure pmbootstrap
+        run: |
+          pmbootstrap -p "$GITHUB_WORKSPACE" config device microsoft-surface-pro-x
+          pmbootstrap -p "$GITHUB_WORKSPACE" config ui none
+          pmbootstrap -p "$GITHUB_WORKSPACE" config build_default_device_arch True
+          pmbootstrap -p "$GITHUB_WORKSPACE" work_migrate
+
+      - name: Build firmware-microsoft-surface-pro-x
+        run: pmbootstrap -y -p "$GITHUB_WORKSPACE" --details-to-stdout build firmware-microsoft-surface-pro-x
+
+      - name: Build linux-postmarketos-qcom-sc8180x-surface
+        run: pmbootstrap -y -p "$GITHUB_WORKSPACE" -j "$(nproc)" --details-to-stdout build linux-postmarketos-qcom-sc8180x-surface
+
+      - name: Build device-microsoft-surface-pro-x
+        run: pmbootstrap -y -p "$GITHUB_WORKSPACE" --details-to-stdout build device-microsoft-surface-pro-x
+
+      - name: Collect built packages
+        run: |
+          work="$(pmbootstrap -p "$GITHUB_WORKSPACE" config work)"
+          mkdir -p output
+          cp "$work"/packages/edge/aarch64/*.apk output/ || true
+          ls -lh output/
+
+      - name: Upload built packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: spx-packages
+          path: output/*.apk
+          retention-days: 30
