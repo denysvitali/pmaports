@@ -1,5 +1,5 @@
 # Reference: <https://postmarketos.org/devicepkg>
-# Maintainer: Daniele Vitali <daniele@vitali.bid>
+# Maintainer: Denys Vitali <denys@denv.it>
 pkgname=device-microsoft-surface-pro-x
 pkgdesc="Microsoft Surface Pro X"
 pkgver=1

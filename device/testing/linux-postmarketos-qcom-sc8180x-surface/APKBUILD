@@ -1,4 +1,4 @@
-# Maintainer: Daniele Vitali <daniele@vitali.bid>
+# Maintainer: Denys Vitali <denys@denv.it>
 pkgname=linux-postmarketos-qcom-sc8180x-surface
 pkgver=6.18.0
 pkgrel=0
