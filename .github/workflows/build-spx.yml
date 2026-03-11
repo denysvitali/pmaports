@@ -29,16 +29,15 @@ jobs:
 
       - name: Configure pmbootstrap
         run: |
-          # Create config directory
-          mkdir -p ~/.config/pmbootstrap
+          # Add upstream remote so pmbootstrap can validate the pmaports repo
+          git -C "$GITHUB_WORKSPACE" remote add upstream https://gitlab.postmarketos.org/postmarketOS/pmaports.git
 
-          # Write a minimal config file
-          cat > ~/.config/pmbootstrap/pmbootstrap.cfg <<PMCFG
+          # Create config directory and write minimal config
+          mkdir -p ~/.config/pmbootstrap
+          cat > ~/.config/pmbootstrap/pmbootstrap.cfg <<'PMCFG'
           [pmbootstrap]
-          aports = $GITHUB_WORKSPACE
           device = microsoft-surface-pro-x
           ui = none
-          work = /home/runner/.local/var/pmbootstrap
           build_default_device_arch = True
           extra_packages = none
           boot_size = 256
@@ -46,12 +45,9 @@ jobs:
           hostname = surface-pro-x
           channel = edge
           PMCFG
-
-          # Strip leading whitespace from heredoc indentation
           sed -i 's/^          //' ~/.config/pmbootstrap/pmbootstrap.cfg
 
-          pmbootstrap --aports "$GITHUB_WORKSPACE" work_migrate
-          pmbootstrap --aports "$GITHUB_WORKSPACE" config aports "$GITHUB_WORKSPACE"
+          pmbootstrap --aports "$GITHUB_WORKSPACE" --details-to-stdout work_migrate
 
       - name: Build firmware-microsoft-surface-pro-x
         run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build firmware-microsoft-surface-pro-x
