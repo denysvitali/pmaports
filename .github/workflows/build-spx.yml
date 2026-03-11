@@ -31,6 +31,7 @@ jobs:
         run: |
           # Add upstream remote so pmbootstrap can validate the pmaports repo
           git -C "$GITHUB_WORKSPACE" remote add upstream https://gitlab.postmarketos.org/postmarketOS/pmaports.git
+          git -C "$GITHUB_WORKSPACE" fetch --depth=1 upstream master
 
           # Create config directory and write minimal config
           mkdir -p ~/.config/pmbootstrap
