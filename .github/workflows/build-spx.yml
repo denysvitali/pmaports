@@ -37,6 +37,10 @@ jobs:
           printf '[pmbootstrap]\ndevice = microsoft-surface-pro-x\nui = none\nbuild_default_device_arch = True\nextra_packages = none\nboot_size = 256\nextra_space = 0\nhostname = surface-pro-x\nchannel = edge\n' > ~/.config/pmbootstrap_v3.cfg
 
           cat ~/.config/pmbootstrap_v3.cfg
+
+          # Create the work directory
+          mkdir -p ~/.local/var/pmbootstrap
+
           pmbootstrap --aports "$GITHUB_WORKSPACE" --details-to-stdout work_migrate
 
       - name: Build firmware-microsoft-surface-pro-x
