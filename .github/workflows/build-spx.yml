@@ -16,9 +16,74 @@ on:
       - 'device/testing/linux-postmarketos-qcom-sc8180x-surface/**'
   workflow_dispatch:
 
+env:
+  PMBOOTSTRAP_WORK: /home/runner/.local/var/pmbootstrap
+  PMBOOTSTRAP_PACKAGES: /home/runner/.local/var/pmbootstrap/packages/edge/aarch64
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-firmware:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+      - name: Checkout pmaports
+        uses: actions/checkout@v4
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/pip
+          key: ${{ runner.os }}-${{ runner.arch }}-pip-pmbootstrap-${{ hashFiles('.github/workflows/build-spx.yml') }}
+
+      - name: Cache pmbootstrap distfiles
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PMBOOTSTRAP_WORK }}/cache_distfiles
+          key: ${{ runner.os }}-${{ runner.arch }}-distfiles-v1
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-distfiles-v1
+
+      - name: Cache APK packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PMBOOTSTRAP_WORK }}/cache_apk
+          key: ${{ runner.os }}-${{ runner.arch }}-apk-v1
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-apk-v1
+
+      - name: Cache chroot
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PMBOOTSTRAP_WORK }}/chroot_native
+          key: ${{ runner.os }}-${{ runner.arch }}-chroot-firmware-v1
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-chroot-firmware-v1
+
+      - name: Install pmbootstrap
+        run: pip install --cache-dir /home/runner/.cache/pip pmbootstrap
+
+      - name: Configure pmbootstrap
+        run: |
+          git -C "$GITHUB_WORKSPACE" remote add upstream https://gitlab.postmarketos.org/postmarketOS/pmaports.git
+          git -C "$GITHUB_WORKSPACE" fetch --depth=1 upstream master
+
+          printf '[pmbootstrap]\ndevice = microsoft-surface-pro-x\nui = none\nbuild_default_device_arch = True\nextra_packages = none\nboot_size = 256\nextra_space = 0\nhostname = surface-pro-x\nchannel = edge\n' > ~/.config/pmbootstrap_v3.cfg
+
+          mkdir -p $PMBOOTSTRAP_WORK
+          echo "8" > $PMBOOTSTRAP_WORK/version
+          pmbootstrap --aports "$GITHUB_WORKSPACE" --details-to-stdout work_migrate
+
+      - name: Build firmware-microsoft-surface-pro-x
+        run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build firmware-microsoft-surface-pro-x
+
+      - name: Upload firmware packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-packages
+          path: ${{ env.PMBOOTSTRAP_PACKAGES }}/firmware-microsoft-surface-pro-x-*.apk
+          retention-days: 30
+
+  build-kernel:
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
     steps:
       - name: Checkout pmaports
@@ -27,50 +92,128 @@ jobs:
       - name: Cache pip packages
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-pmbootstrap-${{ hashFiles('.github/workflows/build-spx.yml') }}
+          path: /home/runner/.cache/pip
+          key: ${{ runner.os }}-${{ runner.arch }}-pip-pmbootstrap-${{ hashFiles('.github/workflows/build-spx.yml') }}
 
       - name: Cache pmbootstrap distfiles
         uses: actions/cache@v4
         with:
-          path: ~/.local/var/pmbootstrap/cache_distfiles
-          key: ${{ runner.os }}-distfiles-v1
+          path: ${{ env.PMBOOTSTRAP_WORK }}/cache_distfiles
+          key: ${{ runner.os }}-${{ runner.arch }}-distfiles-v1
           restore-keys: |
-            ${{ runner.os }}-distfiles-v1
+            ${{ runner.os }}-${{ runner.arch }}-distfiles-v1
+
+      - name: Cache APK packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PMBOOTSTRAP_WORK }}/cache_apk
+          key: ${{ runner.os }}-${{ runner.arch }}-apk-v1
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-apk-v1
 
       - name: Cache ccache
         uses: actions/cache@v4
         with:
-          path: ~/.local/var/pmbootstrap/cache_ccache
-          key: ${{ runner.os }}-ccache-v1
+          path: ${{ env.PMBOOTSTRAP_WORK }}/cache_ccache
+          key: ${{ runner.os }}-${{ runner.arch }}-ccache-${{ hashFiles('device/testing/linux-postmarketos-qcom-sc8180x-surface/**/config-*') }}
           restore-keys: |
-            ${{ runner.os }}-ccache-v1
+            ${{ runner.os }}-${{ runner.arch }}-ccache-
+
+      - name: Cache chroot
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PMBOOTSTRAP_WORK }}/chroot_native
+          key: ${{ runner.os }}-${{ runner.arch }}-chroot-kernel-v1
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-chroot-kernel-v1
 
       - name: Install pmbootstrap
-        run: pip install --cache-dir ~/.cache/pip git+https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
+        run: pip install --cache-dir /home/runner/.cache/pip pmbootstrap
 
       - name: Configure pmbootstrap
         run: |
-          # Add upstream remote so pmbootstrap can validate the pmaports repo
           git -C "$GITHUB_WORKSPACE" remote add upstream https://gitlab.postmarketos.org/postmarketOS/pmaports.git
           git -C "$GITHUB_WORKSPACE" fetch --depth=1 upstream master
 
-          # Create minimal config file (pmbootstrap v3 expects pmbootstrap_v3.cfg)
           printf '[pmbootstrap]\ndevice = microsoft-surface-pro-x\nui = none\nbuild_default_device_arch = True\nextra_packages = none\nboot_size = 256\nextra_space = 0\nhostname = surface-pro-x\nchannel = edge\n' > ~/.config/pmbootstrap_v3.cfg
 
-          cat ~/.config/pmbootstrap_v3.cfg
-
-          # Create the work directory with correct version
-          mkdir -p ~/.local/var/pmbootstrap
-          echo "8" > ~/.local/var/pmbootstrap/version
-
+          mkdir -p $PMBOOTSTRAP_WORK
+          echo "8" > $PMBOOTSTRAP_WORK/version
           pmbootstrap --aports "$GITHUB_WORKSPACE" --details-to-stdout work_migrate
-
-      - name: Build firmware-microsoft-surface-pro-x
-        run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build firmware-microsoft-surface-pro-x
 
       - name: Build linux-postmarketos-qcom-sc8180x-surface
         run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" -j "$(nproc)" --details-to-stdout build linux-postmarketos-qcom-sc8180x-surface
+
+      - name: Upload kernel packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-packages
+          path: ${{ env.PMBOOTSTRAP_PACKAGES }}/linux-postmarketos-qcom-sc8180x-surface-*.apk
+          retention-days: 30
+
+  build-device:
+    needs: [build-firmware, build-kernel]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+      - name: Checkout pmaports
+        uses: actions/checkout@v4
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/pip
+          key: ${{ runner.os }}-${{ runner.arch }}-pip-pmbootstrap-${{ hashFiles('.github/workflows/build-spx.yml') }}
+
+      - name: Cache pmbootstrap distfiles
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PMBOOTSTRAP_WORK }}/cache_distfiles
+          key: ${{ runner.os }}-${{ runner.arch }}-distfiles-v1
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-distfiles-v1
+
+      - name: Cache APK packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PMBOOTSTRAP_WORK }}/cache_apk
+          key: ${{ runner.os }}-${{ runner.arch }}-apk-v1
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-apk-v1
+
+      - name: Cache chroot
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PMBOOTSTRAP_WORK }}/chroot_native
+          key: ${{ runner.os }}-${{ runner.arch }}-chroot-device-v1
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-chroot-device-v1
+
+      - name: Install pmbootstrap
+        run: pip install --cache-dir /home/runner/.cache/pip pmbootstrap
+
+      - name: Configure pmbootstrap
+        run: |
+          git -C "$GITHUB_WORKSPACE" remote add upstream https://gitlab.postmarketos.org/postmarketOS/pmaports.git
+          git -C "$GITHUB_WORKSPACE" fetch --depth=1 upstream master
+
+          printf '[pmbootstrap]\ndevice = microsoft-surface-pro-x\nui = none\nbuild_default_device_arch = True\nextra_packages = none\nboot_size = 256\nextra_space = 0\nhostname = surface-pro-x\nchannel = edge\n' > ~/.config/pmbootstrap_v3.cfg
+
+          mkdir -p $PMBOOTSTRAP_WORK
+          echo "8" > $PMBOOTSTRAP_WORK/version
+          pmbootstrap --aports "$GITHUB_WORKSPACE" --details-to-stdout work_migrate
+
+      - name: Download firmware packages
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-packages
+          path: ${{ env.PMBOOTSTRAP_PACKAGES }}
+
+      - name: Download kernel packages
+        uses: actions/download-artifact@v4
+        with:
+          name: kernel-packages
+          path: ${{ env.PMBOOTSTRAP_PACKAGES }}
 
       - name: Build device-microsoft-surface-pro-x
         run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build device-microsoft-surface-pro-x
@@ -91,7 +234,7 @@ jobs:
 
           # Compress the disk image
           if [ -f output/microsoft-surface-pro-x.img ]; then
-            xz -T0 -9 output/microsoft-surface-pro-x.img
+            xz -T0 -6 output/microsoft-surface-pro-x.img
           fi
 
           ls -lh output/
