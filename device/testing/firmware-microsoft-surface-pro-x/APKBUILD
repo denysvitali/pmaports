@@ -45,7 +45,6 @@ package() {
 	install -Dm644 qcom/msft/surface/pro-x-sq2/qcmpss8180_nm.mbn -t "$_fwdir"
 
 	# Other firmware
-	install -Dm644 qcom/msft/surface/pro-x-sq2/battmgr.jsn -t "$_fwdir"
 	install -Dm644 qcom/msft/surface/pro-x-sq2/charger.jsn -t "$_fwdir"
 	install -Dm644 qcom/msft/surface/pro-x-sq2/qcvss8180.mbn -t "$_fwdir"
 	install -Dm644 qcom/msft/surface/pro-x-sq2/qdsp6m.qdb -t "$_fwdir"
