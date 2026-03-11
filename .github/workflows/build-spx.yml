@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install pmbootstrap
-        run: pip install pmbootstrap
+        run: pip install git+https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
 
       - name: Configure pmbootstrap
         run: |
