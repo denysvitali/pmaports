@@ -38,8 +38,9 @@ jobs:
 
           cat ~/.config/pmbootstrap_v3.cfg
 
-          # Create the work directory
+          # Create the work directory with correct version
           mkdir -p ~/.local/var/pmbootstrap
+          echo "8" > ~/.local/var/pmbootstrap/version
 
           pmbootstrap --aports "$GITHUB_WORKSPACE" --details-to-stdout work_migrate
 
