@@ -24,8 +24,30 @@ jobs:
       - name: Checkout pmaports
         uses: actions/checkout@v4
 
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-pmbootstrap-${{ hashFiles('.github/workflows/build-spx.yml') }}
+
+      - name: Cache pmbootstrap distfiles
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/var/pmbootstrap/cache_distfiles
+          key: ${{ runner.os }}-distfiles-v1
+          restore-keys: |
+            ${{ runner.os }}-distfiles-v1
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/var/pmbootstrap/cache_ccache
+          key: ${{ runner.os }}-ccache-v1
+          restore-keys: |
+            ${{ runner.os }}-ccache-v1
+
       - name: Install pmbootstrap
-        run: pip install git+https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
+        run: pip install --cache-dir ~/.cache/pip git+https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
 
       - name: Configure pmbootstrap
         run: |
