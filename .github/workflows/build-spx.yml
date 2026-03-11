@@ -35,19 +35,9 @@ jobs:
 
           # Create config directory and write minimal config
           mkdir -p ~/.config/pmbootstrap
-          cat > ~/.config/pmbootstrap/pmbootstrap.cfg <<'PMCFG'
-          [pmbootstrap]
-          device = microsoft-surface-pro-x
-          ui = none
-          build_default_device_arch = True
-          extra_packages = none
-          boot_size = 256
-          extra_space = 0
-          hostname = surface-pro-x
-          channel = edge
-          PMCFG
-          sed -i 's/^          //' ~/.config/pmbootstrap/pmbootstrap.cfg
+          printf '[pmbootstrap]\ndevice = microsoft-surface-pro-x\nui = none\nbuild_default_device_arch = True\nextra_packages = none\nboot_size = 256\nextra_space = 0\nhostname = surface-pro-x\nchannel = edge\n' > ~/.config/pmbootstrap/pmbootstrap.cfg
 
+          cat ~/.config/pmbootstrap/pmbootstrap.cfg
           pmbootstrap --aports "$GITHUB_WORKSPACE" --details-to-stdout work_migrate
 
       - name: Build firmware-microsoft-surface-pro-x
