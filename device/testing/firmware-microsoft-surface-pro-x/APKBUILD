@@ -1,0 +1,75 @@
+# Maintainer: Daniele Vitali <daniele@vitali.bid>
+pkgname=firmware-microsoft-surface-pro-x
+pkgver=1
+pkgrel=0
+pkgdesc="Firmware files for Microsoft Surface Pro X"
+url="https://github.com/linux-surface/aarch64-firmware"
+arch="aarch64"
+license="proprietary"
+options="!strip !check !archcheck !spdx !tracedeps pmb:cross-native"
+
+_commit="9f07579ee64aba56419cfd0fbbca9f26741edc90"
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/linux-surface/aarch64-firmware/archive/$_commit.tar.gz
+	30-gpu-firmware.files
+	31-remoteproc-firmware.files
+"
+
+builddir="$srcdir/aarch64-firmware-$_commit"
+
+package() {
+	cd "$builddir/firmware"
+
+	# GPU firmware
+	_fwdir="$pkgdir/lib/firmware/qcom"
+	install -Dm644 qcom/a680_gmu.bin -t "$_fwdir"
+	install -Dm644 qcom/a680_sqe.fw -t "$_fwdir"
+
+	# GPU zap shader
+	_fwdir="$pkgdir/lib/firmware/qcom/msft/surface/pro-x-sq2"
+	install -Dm644 qcom/msft/surface/pro-x-sq2/qcdxkmsuc8180.mbn -t "$_fwdir"
+
+	# ADSP firmware
+	install -Dm644 qcom/msft/surface/pro-x-sq2/adspr.jsn -t "$_fwdir"
+	install -Dm644 qcom/msft/surface/pro-x-sq2/adspua.jsn -t "$_fwdir"
+	install -Dm644 qcom/msft/surface/pro-x-sq2/qcadsp8180.mbn -t "$_fwdir"
+
+	# CDSP firmware
+	install -Dm644 qcom/msft/surface/pro-x-sq2/cdspr.jsn -t "$_fwdir"
+	install -Dm644 qcom/msft/surface/pro-x-sq2/qccdsp8180.mbn -t "$_fwdir"
+
+	# MPSS (modem) firmware
+	install -Dm644 qcom/msft/surface/pro-x-sq2/modemr.jsn -t "$_fwdir"
+	install -Dm644 qcom/msft/surface/pro-x-sq2/modemuw.jsn -t "$_fwdir"
+	install -Dm644 qcom/msft/surface/pro-x-sq2/qcmpss8180.mbn -t "$_fwdir"
+	install -Dm644 qcom/msft/surface/pro-x-sq2/qcmpss8180_nm.mbn -t "$_fwdir"
+
+	# Other firmware
+	install -Dm644 qcom/msft/surface/pro-x-sq2/battmgr.jsn -t "$_fwdir"
+	install -Dm644 qcom/msft/surface/pro-x-sq2/charger.jsn -t "$_fwdir"
+	install -Dm644 qcom/msft/surface/pro-x-sq2/qcvss8180.mbn -t "$_fwdir"
+	install -Dm644 qcom/msft/surface/pro-x-sq2/qdsp6m.qdb -t "$_fwdir"
+	install -Dm644 qcom/msft/surface/pro-x-sq2/wlanmdsp.mbn -t "$_fwdir"
+
+	# Bluetooth firmware symlinks (chip reports ROM 0x01 instead of 0x21)
+	_fwdir="$pkgdir/lib/firmware/qca"
+	install -Dm644 qca/crbtfw21.tlv -t "$_fwdir"
+	install -Dm644 qca/crnv21.bin -t "$_fwdir"
+	ln -s crbtfw21.tlv "$_fwdir/crbtfw01.tlv"
+	ln -s crnv21.bin "$_fwdir/crnv01.bin"
+
+	install -Dm644 "$srcdir"/30-gpu-firmware.files -t \
+		"$pkgdir"/usr/share/mkinitfs/files
+
+	# While loading ADSP firmware which is responsible for VBUS supply,
+	# USB loses power for a short time. We need remoteproc firmware
+	# on initramfs stage to boot from USB.
+	install -Dm644 "$srcdir"/31-remoteproc-firmware.files -t \
+		"$pkgdir"/usr/share/mkinitfs/files
+}
+
+sha512sums="
+496398f180632251852e9482d8d5d84556bb7c6285cc193111d6ea598eb4600c9cc91e9d8b8a266b5af11e4796bcb3141adc891b4915adec7ac6bc00158d217d  firmware-microsoft-surface-pro-x-9f07579ee64aba56419cfd0fbbca9f26741edc90.tar.gz
+21323a519ceda90ced334fe267fd91370fd00e10c3e4f063ed7aac765543045643b9f8c205c1e8fed5b5b6dab82c19968796a4ead8c96aaa2ef29686803f0de2  30-gpu-firmware.files
+e532006716469050248c142ad0095625b627978a70f67e7aba22e29aa387832cfc7517e0b05af09ffb076c545808999a3575d0b8a06f2c32163c11270b49713a  31-remoteproc-firmware.files
+"

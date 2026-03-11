@@ -1,0 +1,55 @@
+# Maintainer: Daniele Vitali <daniele@vitali.bid>
+pkgname=linux-postmarketos-qcom-sc8180x-surface
+pkgver=6.18.0
+pkgrel=0
+pkgdesc="Linux kernel fork for Microsoft Surface Pro X (SC8180X)"
+arch="aarch64"
+_carch="arm64"
+_flavor="${pkgname#linux-}"
+url="https://github.com/linux-surface/kernel"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps
+	pmb:cross-native
+	pmb:kconfigcheck-uefi"
+makedepends="bash bison findutils flex installkernel openssl-dev perl"
+
+_commit="3d83d8ff8b3c5ed045a7d576d2f0ccf2165d8c0b"
+_config="config-$_flavor.$arch"
+# Source
+source="
+	linux-$_commit.tar.gz::https://github.com/linux-surface/kernel/archive/$_commit.tar.gz
+	$_config
+"
+builddir="$srcdir/kernel-$_commit"
+
+prepare() {
+	default_prepare
+	cp "$srcdir/config-$_flavor.$arch" .config
+}
+
+build() {
+	unset LDFLAGS
+	make ARCH="$_carch" CC="${CC:-gcc}" \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-$_flavor"
+}
+
+package() {
+	install -Dm644 "$builddir/arch/$_carch/boot/vmlinuz.efi" \
+		"$pkgdir/boot/vmlinuz"
+
+	make modules_install dtbs_install \
+		ARCH="$_carch" \
+		INSTALL_PATH="$pkgdir"/boot/ \
+		INSTALL_MOD_PATH="$pkgdir" \
+		INSTALL_MOD_STRIP=1 \
+		INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs
+	rm -f "$pkgdir"/lib/modules/*/build "$pkgdir"/lib/modules/*/source
+
+	install -D "$builddir"/include/config/kernel.release \
+		"$pkgdir"/usr/share/kernel/$_flavor/kernel.release
+}
+
+sha512sums="
+5dfbd213b8c396849068da8879f32ce6da2d07cadf3bcec1abd64b766e43a465ab30d37939d9ffcb1fd9b893e95a9a69a2aff0c80907ae53578500e60414620e  linux-3d83d8ff8b3c5ed045a7d576d2f0ccf2165d8c0b.tar.gz
+4ab2ae1e6e2e590ab394c948588665d0766368db2e785f5cff1225d6e51726508c5e475588f753360f8735658f1e89ef3c03a2cdbe20644d9f758ea2c972b76a  config-postmarketos-qcom-sc8180x-surface.aarch64
+"

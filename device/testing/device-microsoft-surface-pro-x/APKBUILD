@@ -1,0 +1,38 @@
+# Reference: <https://postmarketos.org/devicepkg>
+# Maintainer: Daniele Vitali <daniele@vitali.bid>
+pkgname=device-microsoft-surface-pro-x
+pkgdesc="Microsoft Surface Pro X"
+pkgver=1
+pkgrel=0
+url="https://postmarketos.org"
+license="MIT"
+arch="aarch64"
+options="!check !archcheck"
+depends="
+	linux-postmarketos-qcom-sc8180x-surface
+	postmarketos-base
+	soc-qcom-sc8180x
+	systemd-boot
+"
+makedepends="devicepkg-dev"
+source="deviceinfo modules-initfs"
+subpackages="$pkgname-nonfree-firmware:nonfree_firmware"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+}
+
+nonfree_firmware() {
+	pkgdesc="WiFi, GPU, and modem firmware"
+	depends="firmware-microsoft-surface-pro-x linux-firmware-ath10k soc-qcom-sc8180x-nonfree-firmware"
+	mkdir "$subpkgdir"
+}
+
+sha512sums="
+22fb6ede9630d7d9aafba71a7c9e62d18f40d64e8235bde7223c562caee72546f1fd50fd5fafeac2aeac4a1125f87989558d6532bbcc1694eb29e7fe190502c4  deviceinfo
+068bcf4410e787c797964e6f6a8047cd6efd30eef5c7153e1bddb53d0d22cc4618f1b1bad2a7134f0354ce90f19c0479f0f90c0cff6618c064c89cd8d7ceda1e  modules-initfs
+"

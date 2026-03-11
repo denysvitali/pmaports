@@ -1,0 +1,17 @@
+i2c-qcom-geni
+hid-generic
+i2c-hid-of
+msm
+phy-qcom-edp
+panel-edp
+leds-qcom-lpg
+pwm-bl
+pdr-interface
+qcom-common
+qcom-q6v5-pas
+qrtr-smd
+phy-qcom-qmp-combo
+qcom-battmgr
+pmic-glink-altmode
+qcom-glink-smem
+spi-hid
