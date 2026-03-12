@@ -59,7 +59,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-chroot-firmware-v1
 
       - name: Install pmbootstrap
-        run: pip install --cache-dir /home/runner/.cache/pip pmbootstrap
+        run: pip install --cache-dir /home/runner/.cache/pip git+https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
 
       - name: Configure pmbootstrap
         run: |
@@ -128,7 +128,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-chroot-kernel-v1
 
       - name: Install pmbootstrap
-        run: pip install --cache-dir /home/runner/.cache/pip pmbootstrap
+        run: pip install --cache-dir /home/runner/.cache/pip git+https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
 
       - name: Configure pmbootstrap
         run: |
@@ -190,7 +190,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-chroot-device-v1
 
       - name: Install pmbootstrap
-        run: pip install --cache-dir /home/runner/.cache/pip pmbootstrap
+        run: pip install --cache-dir /home/runner/.cache/pip git+https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
 
       - name: Configure pmbootstrap
         run: |
