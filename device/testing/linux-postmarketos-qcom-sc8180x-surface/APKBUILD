@@ -1,7 +1,7 @@
 # Maintainer: Denys Vitali <denys@denv.it>
 pkgname=linux-postmarketos-qcom-sc8180x-surface
 pkgver=6.18.0
-pkgrel=0
+pkgrel=1
 pkgdesc="Linux kernel fork for Microsoft Surface Pro X (SC8180X)"
 arch="aarch64"
 _carch="arm64"
@@ -11,7 +11,7 @@ license="GPL-2.0-only"
 options="!strip !check !tracedeps
 	pmb:cross-native
 	pmb:kconfigcheck-uefi"
-makedepends="bash bison findutils flex installkernel openssl-dev perl"
+makedepends="bash bison findutils flex installkernel openssl-dev perl python3"
 
 _commit="3d83d8ff8b3c5ed045a7d576d2f0ccf2165d8c0b"
 _config="config-$_flavor.$arch"
