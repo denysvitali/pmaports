@@ -16,6 +16,10 @@ on:
       - 'device/testing/linux-postmarketos-qcom-sc8180x-surface/**'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 env:
   PMBOOTSTRAP_WORK: /home/runner/.local/var/pmbootstrap
   PMBOOTSTRAP_PACKAGES: /home/runner/.local/var/pmbootstrap/packages/edge/aarch64
