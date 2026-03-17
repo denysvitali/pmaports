@@ -64,7 +64,7 @@ jobs:
       - name: Configure pmbootstrap
         run: |
           git -C "$GITHUB_WORKSPACE" remote add upstream https://gitlab.postmarketos.org/postmarketOS/pmaports.git
-          git -C "$GITHUB_WORKSPACE" fetch --depth=1 upstream master
+          git -C "$GITHUB_WORKSPACE" fetch --depth=1 upstream main
 
           printf '[pmbootstrap]\ndevice = microsoft-surface-pro-x\nui = none\nbuild_default_device_arch = True\nextra_packages = none\nboot_size = 256\nextra_space = 0\nhostname = surface-pro-x\nchannel = edge\n' > ~/.config/pmbootstrap_v3.cfg
 
@@ -133,7 +133,7 @@ jobs:
       - name: Configure pmbootstrap
         run: |
           git -C "$GITHUB_WORKSPACE" remote add upstream https://gitlab.postmarketos.org/postmarketOS/pmaports.git
-          git -C "$GITHUB_WORKSPACE" fetch --depth=1 upstream master
+          git -C "$GITHUB_WORKSPACE" fetch --depth=1 upstream main
 
           printf '[pmbootstrap]\ndevice = microsoft-surface-pro-x\nui = none\nbuild_default_device_arch = True\nextra_packages = none\nboot_size = 256\nextra_space = 0\nhostname = surface-pro-x\nchannel = edge\n' > ~/.config/pmbootstrap_v3.cfg
 
@@ -195,7 +195,7 @@ jobs:
       - name: Configure pmbootstrap
         run: |
           git -C "$GITHUB_WORKSPACE" remote add upstream https://gitlab.postmarketos.org/postmarketOS/pmaports.git
-          git -C "$GITHUB_WORKSPACE" fetch --depth=1 upstream master
+          git -C "$GITHUB_WORKSPACE" fetch --depth=1 upstream main
 
           printf '[pmbootstrap]\ndevice = microsoft-surface-pro-x\nui = none\nbuild_default_device_arch = True\nextra_packages = none\nboot_size = 256\nextra_space = 0\nhostname = surface-pro-x\nchannel = edge\n' > ~/.config/pmbootstrap_v3.cfg
 
