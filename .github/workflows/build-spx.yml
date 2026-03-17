@@ -232,10 +232,7 @@ jobs:
             KEY=$(ls /home/pmos/.abuild/*.rsa 2>/dev/null | head -1) &&
             cp /home/pmos/.abuild/*.rsa.pub /etc/apk/keys/ &&
             cd /mnt/pmbootstrap/packages/edge/aarch64 &&
-            (apk mkndx --allow-untrusted -o APKINDEX.tar.gz *.apk 2>/dev/null ||
-             apk index --allow-untrusted -o APKINDEX.tar.gz *.apk 2>/dev/null ||
-             apk mkndx -o APKINDEX.tar.gz *.apk 2>/dev/null ||
-             apk index -o APKINDEX.tar.gz *.apk) &&
+            apk index --allow-untrusted -o APKINDEX.tar.gz *.apk &&
             abuild-sign -k "$KEY" APKINDEX.tar.gz
           '
 
