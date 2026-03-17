@@ -231,7 +231,6 @@ jobs:
             su pmos -c "PACKAGER=\"pmos <pmos@local>\" HOME=/home/pmos abuild-keygen -n -q -a" &&
             KEY=$(ls /home/pmos/.abuild/*.rsa 2>/dev/null | head -1) &&
             cp /home/pmos/.abuild/*.rsa.pub /etc/apk/keys/ &&
-            cp /home/pmos/.abuild/*.rsa* /mnt/pmbootstrap/abuild-config/ &&
             cd /mnt/pmbootstrap/packages/edge/aarch64 &&
             for f in *.apk; do
               [ -f "$f" ] && abuild-sign -k "$KEY" "$f"
