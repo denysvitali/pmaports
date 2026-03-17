@@ -219,6 +219,27 @@ jobs:
           name: kernel-packages
           path: ${{ env.PMBOOTSTRAP_PACKAGES }}
 
+      - name: Sign pre-built packages and create APKINDEX
+        run: |
+          # Fix permissions on downloaded artifacts (owned by runner, needs to be writable by pmos in chroot)
+          sudo chmod -R a+rwX $PMBOOTSTRAP_WORK/packages/
+
+          # Initialize chroot, re-sign packages, and create APKINDEX so pmbootstrap
+          # recognizes pre-built firmware/kernel and doesn't rebuild them from source
+          pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout chroot -- sh -c '
+            apk add --no-interactive abuild &&
+            su pmos -c "PACKAGER=\"pmos <pmos@local>\" HOME=/home/pmos abuild-keygen -n -q -a" &&
+            KEY=$(ls /home/pmos/.abuild/*.rsa 2>/dev/null | head -1) &&
+            cp /home/pmos/.abuild/*.rsa.pub /etc/apk/keys/ &&
+            cp /home/pmos/.abuild/*.rsa* /mnt/pmbootstrap/abuild-config/ &&
+            cd /mnt/pmbootstrap/packages/edge/aarch64 &&
+            for f in *.apk; do
+              [ -f "$f" ] && abuild-sign -k "$KEY" "$f"
+            done &&
+            (apk mkndx -o APKINDEX.tar.gz *.apk 2>/dev/null || apk index -o APKINDEX.tar.gz *.apk) &&
+            abuild-sign -k "$KEY" APKINDEX.tar.gz
+          '
+
       - name: Build device-microsoft-surface-pro-x
         run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build device-microsoft-surface-pro-x
 
