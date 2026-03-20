@@ -23,6 +23,7 @@ concurrency:
 env:
   PMBOOTSTRAP_WORK: /home/runner/.local/var/pmbootstrap
   PMBOOTSTRAP_PACKAGES: /home/runner/.local/var/pmbootstrap/packages/edge/aarch64
+  KERNEL_RELEASES_BASE: https://github.com/denysvitali/linux-surface/releases/download
 
 jobs:
   build-firmware:
@@ -86,9 +87,47 @@ jobs:
           path: ${{ env.PMBOOTSTRAP_PACKAGES }}/firmware-microsoft-surface-pro-x-*.apk
           retention-days: 30
 
-  build-kernel:
+  download-kernel:
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 180
+    timeout-minutes: 30
+    steps:
+      - name: Checkout pmaports
+        uses: actions/checkout@v4
+
+      - name: Get latest kernel release
+        id: get-release
+        run: |
+          LATEST_RELEASE=$(curl -s "https://api.github.com/repos/denysvitali/linux-surface/releases?per_page=1" | jq -r '.[0].tag_name')
+          echo "Latest release: $LATEST_RELEASE"
+          echo "tag_name=$LATEST_RELEASE" >> $GITHUB_OUTPUT
+
+      - name: Download prebuilt kernel artifacts
+        run: |
+          RELEASE_TAG="${{ steps.get-release.outputs.tag_name }}"
+          echo "Downloading kernel from release: $RELEASE_TAG"
+          mkdir -p kernel-artifacts
+          cd kernel-artifacts
+
+          # Download all required artifacts
+          curl -sL "${{ env.KERNEL_RELEASES_BASE }}/$RELEASE_TAG/Image.gz" -o Image.gz
+          curl -sL "${{ env.KERNEL_RELEASES_BASE }}/$RELEASE_TAG/sc8180x-surface-pro-x.dtb" -o sc8180x-surface-pro-x.dtb
+          curl -sL "${{ env.KERNEL_RELEASES_BASE }}/$RELEASE_TAG/modules.tar.gz" -o modules.tar.gz
+          curl -sL "${{ env.KERNEL_RELEASES_BASE }}/$RELEASE_TAG/build-info.txt" -o build-info.txt
+
+          # Verify downloads
+          ls -lh
+
+      - name: Upload kernel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-artifacts
+          path: kernel-artifacts/
+          retention-days: 1
+
+  build-kernel-package:
+    needs: download-kernel
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
     steps:
       - name: Checkout pmaports
         uses: actions/checkout@v4
@@ -115,14 +154,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-apk-v1
 
-      - name: Cache ccache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.PMBOOTSTRAP_WORK }}/cache_ccache
-          key: ${{ runner.os }}-${{ runner.arch }}-ccache-${{ hashFiles('device/testing/linux-postmarketos-qcom-sc8180x-surface/**/config-*') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-ccache-
-
       - name: Cache chroot
         uses: actions/cache@v4
         with:
@@ -145,8 +176,24 @@ jobs:
           echo "8" > $PMBOOTSTRAP_WORK/version
           pmbootstrap --aports "$GITHUB_WORKSPACE" --details-to-stdout work_migrate
 
-      - name: Build linux-postmarketos-qcom-sc8180x-surface
-        run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" -j "$(nproc)" --details-to-stdout build linux-postmarketos-qcom-sc8180x-surface
+      - name: Download kernel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: kernel-artifacts
+          path: /tmp/kernel-artifacts
+
+      - name: Build kernel package from prebuilt artifacts
+        run: |
+          PKG_DIR="$GITHUB_WORKSPACE/device/testing/linux-postmarketos-qcom-sc8180x-surface"
+
+          # Copy artifacts to package directory
+          cp /tmp/kernel-artifacts/Image.gz "$PKG_DIR/"
+          cp /tmp/kernel-artifacts/sc8180x-surface-pro-x.dtb "$PKG_DIR/"
+          cp /tmp/kernel-artifacts/modules.tar.gz "$PKG_DIR/"
+          cp /tmp/kernel-artifacts/build-info.txt "$PKG_DIR/"
+
+          # Build the package
+          pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build linux-postmarketos-qcom-sc8180x-surface
 
       - name: Upload kernel packages
         uses: actions/upload-artifact@v4
@@ -156,7 +203,7 @@ jobs:
           retention-days: 30
 
   build-device:
-    needs: [build-firmware, build-kernel]
+    needs: [build-firmware, build-kernel-package]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:

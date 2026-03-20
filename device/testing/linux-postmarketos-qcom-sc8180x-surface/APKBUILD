@@ -2,54 +2,68 @@
 pkgname=linux-postmarketos-qcom-sc8180x-surface
 pkgver=6.18.0
 pkgrel=1
-pkgdesc="Linux kernel fork for Microsoft Surface Pro X (SC8180X)"
+pkgdesc="Linux kernel fork for Microsoft Surface Pro X (SC8180X) - prebuilt from denysvitali/linux-surface"
 arch="aarch64"
 _carch="arm64"
 _flavor="${pkgname#linux-}"
-url="https://github.com/linux-surface/kernel"
+url="https://github.com/denysvitali/linux-surface/releases"
 license="GPL-2.0-only"
 options="!strip !check !tracedeps
 	pmb:cross-native
-	pmb:kconfigcheck-uefi"
-makedepends="bash bison findutils flex installkernel openssl-dev perl python3"
+	pmb:kconfigcheck-uefi
+	pmb:strict"
 
-_commit="3d83d8ff8b3c5ed045a7d576d2f0ccf2165d8c0b"
-_config="config-$_flavor.$arch"
-# Source
+# Prebuilt kernel artifacts - will be downloaded by the build script
 source="
-	linux-$_commit.tar.gz::https://github.com/linux-surface/kernel/archive/$_commit.tar.gz
-	$_config
+	file://Image.gz
+	file://sc8180x-surface-pro-x.dtb
+	file://modules.tar.gz
+	file://build-info.txt
 "
-builddir="$srcdir/kernel-$_commit"
+
+builddir="$srcdir"
 
 prepare() {
-	default_prepare
-	cp "$srcdir/config-$_flavor.$arch" .config
+	# Extract modules
+	tar -xzf "$srcdir"/modules.tar.gz -C "$srcdir" || tar -xzf "$startdir"/modules.tar.gz -C "$startdir"
+
+	# Get kernel version from build info
+	if [ -f "$srcdir/build-info.txt" ]; then
+		_kernel_version=$(grep "^Kernel version:" "$srcdir/build-info.txt" | cut -d' ' -f3-)
+	elif [ -f "$startdir/build-info.txt" ]; then
+		_kernel_version=$(grep "^Kernel version:" "$startdir/build-info.txt" | cut -d' ' -f3-)
+	else
+		_kernel_version="$pkgver"
+	fi
+	echo "$_kernel_version" > "$srcdir"/kernel.release
 }
 
 build() {
-	unset LDFLAGS
-	make ARCH="$_carch" CC="${CC:-gcc}" \
-		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-$_flavor"
+	# No build needed - using prebuilt kernel
+	return 0
 }
 
 package() {
-	install -Dm644 "$builddir/arch/$_carch/boot/vmlinuz.efi" \
-		"$pkgdir/boot/vmlinuz"
+	# Determine source directory (files may be in $srcdir or $startdir)
+	_srcdir="$srcdir"
+	[ -f "$srcdir/Image.gz" ] || _srcdir="$startdir"
 
-	make modules_install dtbs_install \
-		ARCH="$_carch" \
-		INSTALL_PATH="$pkgdir"/boot/ \
-		INSTALL_MOD_PATH="$pkgdir" \
-		INSTALL_MOD_STRIP=1 \
-		INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs
-	rm -f "$pkgdir"/lib/modules/*/build "$pkgdir"/lib/modules/*/source
+	# Install kernel image
+	install -Dm644 "$_srcdir/Image.gz" "$pkgdir/boot/vmlinuz"
 
-	install -D "$builddir"/include/config/kernel.release \
+	# Install device tree
+	install -Dm644 "$_srcdir/sc8180x-surface-pro-x.dtb" \
+		"$pkgdir/boot/dtbs/qcom/sc8180x-surface-pro-x.dtb"
+
+	# Install modules
+	mkdir -p "$pkgdir"/lib
+	if [ -d "$srcdir/lib/modules" ]; then
+		cp -r "$srcdir"/lib/modules "$pkgdir"/lib/
+	elif [ -d "$startdir/lib/modules" ]; then
+		cp -r "$startdir"/lib/modules "$pkgdir"/lib/
+	fi
+
+	# Install kernel.release
+	install -D "$srcdir"/kernel.release \
 		"$pkgdir"/usr/share/kernel/$_flavor/kernel.release
 }
-
-sha512sums="
-5dfbd213b8c396849068da8879f32ce6da2d07cadf3bcec1abd64b766e43a465ab30d37939d9ffcb1fd9b893e95a9a69a2aff0c80907ae53578500e60414620e  linux-3d83d8ff8b3c5ed045a7d576d2f0ccf2165d8c0b.tar.gz
-4ab2ae1e6e2e590ab394c948588665d0766368db2e785f5cff1225d6e51726508c5e475588f753360f8735658f1e89ef3c03a2cdbe20644d9f758ea2c972b76a  config-postmarketos-qcom-sc8180x-surface.aarch64
-"
