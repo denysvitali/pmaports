@@ -289,6 +289,9 @@ jobs:
           work="$(pmbootstrap --aports "$GITHUB_WORKSPACE" config work)"
           sudo mkdir -p "$work/chroot_rootfs_microsoft-surface-pro-x/etc/apk/keys/"
           sudo cp "$work/chroot_native/etc/apk/keys/"*.pub "$work/chroot_rootfs_microsoft-surface-pro-x/etc/apk/keys/"
+          # Also copy to host system since apk.static runs on the host
+          sudo mkdir -p /etc/apk/keys/
+          sudo cp "$work/chroot_native/etc/apk/keys/"*.pub /etc/apk/keys/
 
       - name: Build device-microsoft-surface-pro-x
         run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build device-microsoft-surface-pro-x
