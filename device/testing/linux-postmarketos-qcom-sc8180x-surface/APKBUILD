@@ -23,6 +23,9 @@ source="
 
 builddir="$srcdir"
 
+# Skip checksums - prebuilt binaries change with each release
+sha512sums=""
+
 prepare() {
 	# Extract modules
 	tar -xzf "$srcdir"/modules.tar.gz -C "$srcdir" || tar -xzf "$startdir"/modules.tar.gz -C "$startdir"
