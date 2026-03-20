@@ -8,24 +8,32 @@ _carch="arm64"
 _flavor="${pkgname#linux-}"
 url="https://github.com/denysvitali/linux-surface/releases"
 license="GPL-2.0-only"
-options="!strip !check !tracedeps !checksum
+options="!strip !check !tracedeps
 	pmb:cross-native
 	pmb:kconfigcheck-uefi
 	pmb:strict"
 
-# Prebuilt kernel artifacts - will be downloaded by the build script
-source="
-	file://Image.gz
-	file://sc8180x-surface-pro-x.dtb
-	file://modules.tar.gz
-	file://build-info.txt
-"
+# No sources listed - files are expected to be in the package directory
+# from the CI workflow or local testing
+source=""
 
 builddir="$srcdir"
 
 prepare() {
+	# Files may be in $startdir (from CI workflow or local build)
+	# Copy them to $srcdir if they exist there
+	for f in Image.gz sc8180x-surface-pro-x.dtb modules.tar.gz build-info.txt; do
+		if [ -f "$startdir/$f" ] && [ ! -f "$srcdir/$f" ]; then
+			cp "$startdir/$f" "$srcdir/"
+		fi
+	done
+
 	# Extract modules
-	tar -xzf "$srcdir"/modules.tar.gz -C "$srcdir" || tar -xzf "$startdir"/modules.tar.gz -C "$startdir"
+	if [ -f "$srcdir/modules.tar.gz" ]; then
+		tar -xzf "$srcdir"/modules.tar.gz -C "$srcdir"
+	elif [ -f "$startdir/modules.tar.gz" ]; then
+		tar -xzf "$startdir"/modules.tar.gz -C "$startdir"
+	fi
 
 	# Get kernel version from build info
 	if [ -f "$srcdir/build-info.txt" ]; then
