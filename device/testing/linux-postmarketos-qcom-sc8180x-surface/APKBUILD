@@ -8,7 +8,7 @@ _carch="arm64"
 _flavor="${pkgname#linux-}"
 url="https://github.com/denysvitali/linux-surface/releases"
 license="GPL-2.0-only"
-options="!strip !check !tracedeps
+options="!strip !check !tracedeps !checksum
 	pmb:cross-native
 	pmb:kconfigcheck-uefi
 	pmb:strict"
@@ -22,9 +22,6 @@ source="
 "
 
 builddir="$srcdir"
-
-# Skip checksums - prebuilt binaries change with each release
-sha512sums=""
 
 prepare() {
 	# Extract modules
