@@ -272,9 +272,10 @@ jobs:
           sudo chmod -R a+rwX $PMBOOTSTRAP_WORK/packages/
 
           # Create unsigned APKINDEX so pmbootstrap recognizes pre-built packages
-          work="$(pmbootstrap --aports "$GITHUB_WORKSPACE" config work)"
-          cd "$work/packages/edge/aarch64"
-          apk index --allow-untrusted -o APKINDEX.tar.gz *.apk
+          pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout chroot -- sh -c '
+            cd /mnt/pmbootstrap/packages/edge/aarch64 &&
+            apk index --allow-untrusted -o APKINDEX.tar.gz *.apk
+          '
 
       - name: Build device-microsoft-surface-pro-x
         run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build device-microsoft-surface-pro-x
