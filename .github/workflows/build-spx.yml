@@ -287,7 +287,7 @@ jobs:
         run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build device-microsoft-surface-pro-x
 
       - name: Build disk image
-        run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout install --no-fde --password 1234 --allow-untrusted
+        run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout install --no-fde --password 1234
 
       - name: Collect artifacts
         run: |
