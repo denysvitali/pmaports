@@ -15,6 +15,13 @@ variables:
   # seems like a reasonable balance. If this is too low, git merge-base (from ci/
   # common.py) can fail
   GIT_DEPTH: 100
+  # Cache directory for pmbootstrap and packages
+  PMBOOTSTRAP_CACHE_DIR: /cache/pmbootstrap
+cache:
+  key: "${CI_COMMIT_REF_SLUG}"
+  paths:
+    - /cache/pmbootstrap/
+  policy: pull-push
 
 # This defines the rules for when a pipeline should run.
 workflow:
@@ -135,7 +142,13 @@ mr-settings:
     - if: *mr_rule
   before_script:
     - *global_before_scripts
+    - mkdir -p /cache/pmbootstrap
+    - chown -R pmos:pmos /cache/pmbootstrap 2>/dev/null || true
+    - echo 'export PMBOOTSTRAP_CACHE_DIR=/cache/pmbootstrap' > /etc/profile.d/pmbootstrap-cache.sh
+    - chmod +x /etc/profile.d/pmbootstrap-cache.sh
     - .ci/lib/gitlab_prepare_ci.sh
+  variables:
+    PMBOOTSTRAP_CACHE_DIR: /cache/pmbootstrap
   after_script:
     - cp -r /home/pmos/.local/var/pmbootstrap/packages/ packages/ || true
   artifacts:

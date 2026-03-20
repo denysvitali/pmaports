@@ -1,0 +1,77 @@
+# Maintainer: Denys Vitali <denys@denv.it>
+pkgname=linux-postmarketos-qcom-sc8180x-surface
+pkgver=6.18.0
+pkgrel=1
+pkgdesc="Linux kernel fork for Microsoft Surface Pro X (SC8180X) - prebuilt from denysvitali/linux-surface"
+arch="aarch64"
+_carch="arm64"
+_flavor="${pkgname#linux-}"
+url="https://github.com/denysvitali/linux-surface/releases"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps
+	pmb:cross-native
+	pmb:kconfigcheck-uefi
+	pmb:strict"
+
+# No sources listed - files are expected to be in the package directory
+# from the CI workflow or local testing
+source=""
+
+builddir="$srcdir"
+
+prepare() {
+	# Files may be in $startdir (from CI workflow or local build)
+	# Copy them to $srcdir if they exist there
+	for f in Image.gz sc8180x-surface-pro-x.dtb modules.tar.gz build-info.txt; do
+		if [ -f "$startdir/$f" ] && [ ! -f "$srcdir/$f" ]; then
+			cp "$startdir/$f" "$srcdir/"
+		fi
+	done
+
+	# Extract modules
+	if [ -f "$srcdir/modules.tar.gz" ]; then
+		tar -xzf "$srcdir"/modules.tar.gz -C "$srcdir"
+	elif [ -f "$startdir/modules.tar.gz" ]; then
+		tar -xzf "$startdir"/modules.tar.gz -C "$startdir"
+	fi
+
+	# Get kernel version from build info
+	if [ -f "$srcdir/build-info.txt" ]; then
+		_kernel_version=$(grep "^Kernel version:" "$srcdir/build-info.txt" | cut -d' ' -f3-)
+	elif [ -f "$startdir/build-info.txt" ]; then
+		_kernel_version=$(grep "^Kernel version:" "$startdir/build-info.txt" | cut -d' ' -f3-)
+	else
+		_kernel_version="$pkgver"
+	fi
+	echo "$_kernel_version" > "$srcdir"/kernel.release
+}
+
+build() {
+	# No build needed - using prebuilt kernel
+	return 0
+}
+
+package() {
+	# Determine source directory (files may be in $srcdir or $startdir)
+	_srcdir="$srcdir"
+	[ -f "$srcdir/Image.gz" ] || _srcdir="$startdir"
+
+	# Install kernel image
+	install -Dm644 "$_srcdir/Image.gz" "$pkgdir/boot/vmlinuz"
+
+	# Install device tree
+	install -Dm644 "$_srcdir/sc8180x-surface-pro-x.dtb" \
+		"$pkgdir/boot/dtbs/qcom/sc8180x-surface-pro-x.dtb"
+
+	# Install modules
+	mkdir -p "$pkgdir"/lib
+	if [ -d "$srcdir/lib/modules" ]; then
+		cp -r "$srcdir"/lib/modules "$pkgdir"/lib/
+	elif [ -d "$startdir/lib/modules" ]; then
+		cp -r "$startdir"/lib/modules "$pkgdir"/lib/
+	fi
+
+	# Install kernel.release
+	install -D "$srcdir"/kernel.release \
+		"$pkgdir"/usr/share/kernel/$_flavor/kernel.release
+}

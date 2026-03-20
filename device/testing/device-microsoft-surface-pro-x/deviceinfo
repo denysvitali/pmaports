@@ -1,0 +1,25 @@
+# Reference: <https://postmarketos.org/deviceinfo>
+# Please use double quotes only. You can source this file in shell
+# scripts.
+
+deviceinfo_format_version="0"
+deviceinfo_name="Microsoft Surface Pro X"
+deviceinfo_manufacturer="Microsoft"
+deviceinfo_codename="microsoft-surface-pro-x"
+deviceinfo_year="2019"
+deviceinfo_dtb="qcom/sc8180x-surface-pro-x"
+deviceinfo_arch="aarch64"
+
+# Device related
+deviceinfo_chassis="tablet"
+deviceinfo_keyboard="false"
+deviceinfo_external_storage="false"
+deviceinfo_screen_width="2880"
+deviceinfo_screen_height="1920"
+
+# Bootloader related
+deviceinfo_flash_method="none"
+deviceinfo_kernel_cmdline="quiet loglevel=2 iommu.passthrough=0 iommu.strict=0 pcie_aspm.policy=powersupersave clk_ignore_unused pd_ignore_unused arm64.nopauth efi=noruntime"
+deviceinfo_generate_systemd_boot="true"
+deviceinfo_boot_filesystem="fat32"
+deviceinfo_partition_type="gpt"
