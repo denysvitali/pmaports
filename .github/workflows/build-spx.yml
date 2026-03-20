@@ -266,21 +266,6 @@ jobs:
           name: kernel-packages
           path: ${{ env.PMBOOTSTRAP_PACKAGES }}
 
-      - name: Create APKINDEX for pre-built packages
-        run: |
-          # Fix permissions on downloaded artifacts (owned by runner, needs to be writable by pmos in chroot)
-          sudo chmod -R a+rwX $PMBOOTSTRAP_WORK/packages/
-
-          # Remove old APKINDEX to avoid signature verification issues
-          work="$(pmbootstrap --aports "$GITHUB_WORKSPACE" config work)"
-          sudo rm -f "$work/packages/edge/aarch64/APKINDEX.tar.gz"
-
-          # Create unsigned APKINDEX so pmbootstrap recognizes pre-built packages
-          pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout chroot -- sh -c '
-            cd /mnt/pmbootstrap/packages/edge/aarch64 &&
-            apk index --allow-untrusted -o APKINDEX.tar.gz *.apk
-          '
-
       - name: Build device-microsoft-surface-pro-x
         run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build device-microsoft-surface-pro-x
 
