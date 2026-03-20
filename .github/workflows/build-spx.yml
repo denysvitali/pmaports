@@ -266,32 +266,15 @@ jobs:
           name: kernel-packages
           path: ${{ env.PMBOOTSTRAP_PACKAGES }}
 
-      - name: Sign pre-built packages and create APKINDEX
+      - name: Create APKINDEX for pre-built packages
         run: |
           # Fix permissions on downloaded artifacts (owned by runner, needs to be writable by pmos in chroot)
           sudo chmod -R a+rwX $PMBOOTSTRAP_WORK/packages/
 
-          # Initialize chroot, create APKINDEX so pmbootstrap recognizes
-          # pre-built firmware/kernel and doesn't rebuild them from source
-          pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout chroot -- sh -c '
-            apk add --no-interactive abuild &&
-            su pmos -c "PACKAGER=\"pmos <pmos@local>\" HOME=/home/pmos abuild-keygen -n -q -a" &&
-            KEY=$(ls /home/pmos/.abuild/*.rsa 2>/dev/null | head -1) &&
-            cp /home/pmos/.abuild/*.rsa.pub /etc/apk/keys/ &&
-            cd /mnt/pmbootstrap/packages/edge/aarch64 &&
-            apk index --allow-untrusted -o APKINDEX.tar.gz *.apk &&
-            abuild-sign -k "$KEY" APKINDEX.tar.gz
-          '
-
-      - name: Copy signing key to rootfs chroot
-        run: |
-          # Copy the public key to the rootfs chroot so it trusts the signed packages
+          # Create unsigned APKINDEX so pmbootstrap recognizes pre-built packages
           work="$(pmbootstrap --aports "$GITHUB_WORKSPACE" config work)"
-          sudo mkdir -p "$work/chroot_rootfs_microsoft-surface-pro-x/etc/apk/keys/"
-          sudo cp "$work/chroot_native/etc/apk/keys/"*.pub "$work/chroot_rootfs_microsoft-surface-pro-x/etc/apk/keys/"
-          # Also copy to host system since apk.static runs on the host
-          sudo mkdir -p /etc/apk/keys/
-          sudo cp "$work/chroot_native/etc/apk/keys/"*.pub /etc/apk/keys/
+          cd "$work/packages/edge/aarch64"
+          apk index --allow-untrusted -o APKINDEX.tar.gz *.apk
 
       - name: Build device-microsoft-surface-pro-x
         run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build device-microsoft-surface-pro-x
