@@ -283,6 +283,13 @@ jobs:
             abuild-sign -k "$KEY" APKINDEX.tar.gz
           '
 
+      - name: Copy signing key to rootfs chroot
+        run: |
+          # Copy the public key to the rootfs chroot so it trusts the signed packages
+          work="$(pmbootstrap --aports "$GITHUB_WORKSPACE" config work)"
+          sudo mkdir -p "$work/chroot_rootfs_microsoft-surface-pro-x/etc/apk/keys/"
+          sudo cp "$work/chroot_native/etc/apk/keys/"*.pub "$work/chroot_rootfs_microsoft-surface-pro-x/etc/apk/keys/"
+
       - name: Build device-microsoft-surface-pro-x
         run: pmbootstrap -y --aports "$GITHUB_WORKSPACE" --details-to-stdout build device-microsoft-surface-pro-x
 
